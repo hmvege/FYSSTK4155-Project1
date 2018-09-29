@@ -1,0 +1,19 @@
+# MacOS junk
+.DS_Store
+
+# Latex junk
+*.txt
+*.aux
+*.fls
+*.log
+*.out
+*.pyg
+*.toc
+
+# Binaries
+build*
+
+# Latexrun
+latex.out
+latexrun
+*pro.user
