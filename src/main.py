@@ -7,6 +7,51 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error, r2_score
 
 
+class LinearRegression:
+    """
+    An implementation of linear regression.
+    """
+
+    def __init__(self, X_train, y_train):
+        raise NotImplementedError
+
+    def fit():
+        raise NotImplementedError
+
+    def predict(self, X_test):
+        raise NotImplementedError
+
+
+class RidgeRegression:
+    """
+    An implementation of ridge regression.
+    """
+
+    def __init__(self, X_train, y_train):
+        raise NotImplementedError
+
+    def fit():
+        raise NotImplementedError
+
+    def predict(self, X_test):
+        raise NotImplementedError
+
+
+class LassoRegression:
+    """
+    An implementation of lasso regression.
+    """
+
+    def __init__(self, X_train, y_train):
+        raise NotImplementedError
+
+    def fit():
+        raise NotImplementedError
+
+    def predict(self, X_test):
+        raise NotImplementedError
+
+
 def FrankeFunction(x, y):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
     term2 = 0.75*np.exp(-((9*x+1)**2)/49.0 - 0.1*(9*y+1))
@@ -156,10 +201,11 @@ def part1():
     x_new = x_new.reshape((Nnew**2, 1))
     y_new = y_new.reshape((Nnew**2, 1))
     X_new = poly5setup(x_new.reshape((Nnew*Nnew, 1)),
-                         y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
+                       y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
 
     # SCIKIT-LEARN
-    linfit5 = LinearRegression(copy_X=True, fit_intercept=True, n_jobs=None, normalize=False)
+    linfit5 = LinearRegression(
+        copy_X=True, fit_intercept=True, n_jobs=None, normalize=False)
     linfit5.fit(X, z.reshape((N*N, 1)))
 
     # x_sk_new = poly5.fit_transform([x_new, y_new])
@@ -179,7 +225,7 @@ def part1():
     x_new = x_new.reshape((Nnew**2, 1))
     y_new = y_new.reshape((Nnew**2, 1))
     X_new = poly5setup(x_new.reshape((Nnew*Nnew, 1)),
-                         y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
+                       y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
     z_new_predict = X_new.dot(beta)
 
     mse_manual = mse(z.reshape((N**2, 1)), z_new_predict)[0]
