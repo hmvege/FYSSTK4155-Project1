@@ -149,26 +149,26 @@ def part1():
     X = poly5setup(x.reshape((N*N, 1)), y.reshape((N*N, 1)), N*N)
 
     # Setting up new vectors
-    x_new = np.linspace(0, 1, N)
-    y_new = np.linspace(0, 1, N)
+    Nnew = 20
+    x_new = np.linspace(0, 1, Nnew)
+    y_new = np.linspace(0, 1, Nnew)
     x_new, y_new = np.meshgrid(x_new, y_new)
+    x_new = x_new.reshape((Nnew**2, 1))
+    y_new = y_new.reshape((Nnew**2, 1))
+    X_new = poly5setup(x_new.reshape((Nnew*Nnew, 1)),
+                         y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
 
-    # # SCIKIT-LEARN
-    # poly5 = PolynomialFeatures(degree=5)
-    # # help(poly5.fit_transform)
-    # print ("Hi")
-    # _X_transformed = poly5.fit_transform(np.hstack([x.reshape(N*N,1),y.reshape(N*N,1)]))
-    # print (_X_transformed.shape)
-    # exit(1)
-
-    # linfit5 = LinearRegression()
-    # linfit5.fit(_X_transformed, z)
+    # SCIKIT-LEARN
+    linfit5 = LinearRegression(copy_X=True, fit_intercept=True, n_jobs=None, normalize=False)
+    linfit5.fit(X, z.reshape((N*N, 1)))
 
     # x_sk_new = poly5.fit_transform([x_new, y_new])
-    # z_sk_new = linfit3.predict(x_sk_new)
-    # # z_approx, beta, eps, variances = linreg(X, z)
-    # # mse_val = mse(z, z_approx)
-    # # Rval = RSquared(z, z_approx)
+    z_sk_new = linfit5.predict(X_new)
+    R2_sk = linfit5.score(X_new, z.reshape((N*N, 1)))
+    MSE_sk = mean_squared_error(z.reshape((N*N, 1)), z_sk_new)
+    print(linfit5.coef_)
+    print("MSE = ", MSE_sk)
+    print("R2 = ", R2_sk)
 
     # MANUAL
     Nnew = 20
@@ -178,9 +178,9 @@ def part1():
     x_new, y_new = np.meshgrid(x_new, y_new)
     x_new = x_new.reshape((Nnew**2, 1))
     y_new = y_new.reshape((Nnew**2, 1))
-    _xy_new = poly5setup(x_new.reshape((Nnew*Nnew, 1)),
+    X_new = poly5setup(x_new.reshape((Nnew*Nnew, 1)),
                          y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
-    z_new_predict = _xy_new.dot(beta)
+    z_new_predict = X_new.dot(beta)
 
     mse_manual = mse(z.reshape((N**2, 1)), z_new_predict)[0]
     r2_manual = RSquared(z.reshape((N**2, 1)), z_new_predict)[0]
@@ -190,9 +190,9 @@ def part1():
                               np.sqrt(np.ravel(beta_variance)))):
         print("Beta_{2} = {0:.6f} +/- {1:.6f}".format(*b, i))
 
-    # _plot_simple_surface(x, y, z)
-    # _plot_simple_surface(x_new.reshape((N, N)), y_new.reshape(
-    #     (N, N)), z_new_predict.reshape((N, N)))
+    # # _plot_simple_surface(x, y, z)
+    # # _plot_simple_surface(x_new.reshape((N, N)), y_new.reshape(
+    # #     (N, N)), z_new_predict.reshape((N, N)))
 
 
 def main():
