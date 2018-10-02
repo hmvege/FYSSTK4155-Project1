@@ -17,3 +17,4 @@ build*
 latex.out
 latexrun
 *pro.user
+__pycache__

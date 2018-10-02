@@ -2,55 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import numba as nb
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
+import sklearn.linear_model as sk_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error, r2_score
-
-
-class LinearRegression:
-    """
-    An implementation of linear regression.
-    """
-
-    def __init__(self, X_train, y_train):
-        raise NotImplementedError
-
-    def fit():
-        raise NotImplementedError
-
-    def predict(self, X_test):
-        raise NotImplementedError
-
-
-class RidgeRegression:
-    """
-    An implementation of ridge regression.
-    """
-
-    def __init__(self, X_train, y_train):
-        raise NotImplementedError
-
-    def fit():
-        raise NotImplementedError
-
-    def predict(self, X_test):
-        raise NotImplementedError
-
-
-class LassoRegression:
-    """
-    An implementation of lasso regression.
-    """
-
-    def __init__(self, X_train, y_train):
-        raise NotImplementedError
-
-    def fit():
-        raise NotImplementedError
-
-    def predict(self, X_test):
-        raise NotImplementedError
-
 
 def FrankeFunction(x, y):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -204,8 +158,8 @@ def part1():
                        y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
 
     # SCIKIT-LEARN
-    linfit5 = LinearRegression(
-        copy_X=True, fit_intercept=True, n_jobs=None, normalize=False)
+    linfit5 = sk_model.LinearRegression(
+        copy_X=True, fit_intercept=False, n_jobs=None, normalize=False)
     linfit5.fit(X, z.reshape((N*N, 1)))
 
     # x_sk_new = poly5.fit_transform([x_new, y_new])
