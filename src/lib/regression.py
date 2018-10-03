@@ -52,17 +52,16 @@ class __RegBackend:
         """Small check if fit has been performed."""
         assert self._fit_performed, "Fit not performed"
 
-    def score(self, X_test, y_true):
+    def score(self, y_test, y_true):
         """Returns the R^2 score.
 
         Args:
-            X_test (ndarray): X array of shape (N, p - 1) to test for
+            y_test (ndarray): X array of shape (N, p - 1) to test for
             y_true (ndarray): true values for X
 
         Returns:
             float: R2 score for X_test values.
         """
-        y_test = X_test @ self.coef
         return metrics.R2(y_test, y_true)
 
     def beta_variance(self):
