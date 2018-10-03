@@ -145,17 +145,17 @@ def part1():
 
     # X = poly5setup(np.ravel(x), np.ravel(y), N)
     # X = poly5setup(x, y, N)
-    X = poly5setup(x.reshape((N*N, 1)), y.reshape((N*N, 1)), N*N)
+    X = poly5setup(x.reshape(-1, 1), y.reshape(-1, 1), N*N)
 
     # Setting up new vectors
     Nnew = 20
     x_new = np.linspace(0, 1, Nnew)
     y_new = np.linspace(0, 1, Nnew)
     x_new, y_new = np.meshgrid(x_new, y_new)
-    x_new = x_new.reshape((Nnew**2, 1))
-    y_new = y_new.reshape((Nnew**2, 1))
-    X_new = poly5setup(x_new.reshape((Nnew*Nnew, 1)),
-                       y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
+    x_new = x_new.reshape(-1, 1)
+    y_new = y_new.reshape(-1, 1)
+    X_new = poly5setup(x_new.reshape(-1, 1),
+                       y_new.reshape(-1, 1), Nnew*Nnew)
 
     # SCIKIT-LEARN
     linfit5 = sk_model.LinearRegression(
@@ -164,26 +164,26 @@ def part1():
 
     # x_sk_new = poly5.fit_transform([x_new, y_new])
     z_sk_new = linfit5.predict(X_new)
-    R2_sk = linfit5.score(X_new, z.reshape((N*N, 1)))
-    MSE_sk = mean_squared_error(z.reshape((N*N, 1)), z_sk_new)
+    R2_sk = linfit5.score(X_new, z.reshape(-1, 1))
+    MSE_sk = mean_squared_error(z.reshape(-1, 1), z_sk_new)
     print(linfit5.coef_)
     print("MSE = ", MSE_sk)
     print("R2 = ", R2_sk)
 
     # MANUAL
     Nnew = 20
-    z_approx, beta, eps, beta_variance = linreg(X, z.reshape((N**2, 1)))
+    z_approx, beta, eps, beta_variance = linreg(X, z.reshape(-1, 1))
     x_new = np.linspace(0, 1, Nnew)
     y_new = np.linspace(0, 1, Nnew)
     x_new, y_new = np.meshgrid(x_new, y_new)
-    x_new = x_new.reshape((Nnew**2, 1))
-    y_new = y_new.reshape((Nnew**2, 1))
-    X_new = poly5setup(x_new.reshape((Nnew*Nnew, 1)),
-                       y_new.reshape((Nnew*Nnew, 1)), Nnew*Nnew)
+    x_new = x_new.reshape(-1, 1)
+    y_new = y_new.reshape(-1, 1)
+    X_new = poly5setup(x_new.reshape(-1, 1),
+                       y_new.reshape(-1, 1), Nnew*Nnew)
     z_new_predict = X_new.dot(beta)
 
-    mse_manual = mse(z.reshape((N**2, 1)), z_new_predict)[0]
-    r2_manual = RSquared(z.reshape((N**2, 1)), z_new_predict)[0]
+    mse_manual = mse(z.reshape(-1, 1), z_new_predict)[0]
+    r2_manual = RSquared(z.reshape(-1, 1), z_new_predict)[0]
     print("MSE: {0:f}".format(mse_manual))
     print("R2: {0:f}".format(r2_manual))
     for i, b in enumerate(zip(np.ravel(beta),

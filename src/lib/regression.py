@@ -108,7 +108,7 @@ class LinearRegression(__RegBackend):
         X_train given as [1, x, x*2, ...]
 
         Args:
-            X_train (ndarray): (N, p - 1), 
+            X_train (ndarray): design matrix, (N, p - 1), 
             y_train (ndarray): (N),
         """
         self.X_train = X_train
@@ -164,7 +164,7 @@ class RidgeRegression(__RegBackend):
         X_train given as [1, x, x*2, ...]
 
         Args:
-            X_train (ndarray): (N, p - 1), 
+            X_train (ndarray): design matrix, (N, p - 1), 
             y_train (ndarray): (N, 1),
         """
         self.X_train = X_train
