@@ -8,7 +8,7 @@ import metrics
 class __RegBackend:
     """Backend class in case we want to run with either scipy, numpy 
     (or something else)."""
-    __fit_performed = False
+    _fit_performed = False
     __possible_backends = ["numpy", "scipy"]
     __possible_inverse_methods = ["inv", "svd"]
 
@@ -22,7 +22,10 @@ class __RegBackend:
             "{:s} inverse method not recognized".format(str(inverse_method))
         self.inverse_method = inverse_method
 
-    def __inv(self, M):
+    def fit(self, X_train, y_train):
+        raise NotImplementedError("Derived class missing fit()")
+
+    def _inv(self, M):
         """Method for taking derivatives with either numpy or scipy."""
 
         if self.linalg_backend == "numpy":
@@ -31,9 +34,9 @@ class __RegBackend:
                 return np.linalg.inv(M)
 
             elif self.inverse_method == "svd":
-                S, V, D = np.linalg.svd(M)
-                D = 1.0/np.diag(D)
-                return V @ (D * U.T)
+                U, S, VH = np.linalg.svd(M)
+                S = np.diag(1.0/S)
+                return U @ S @ VH
 
         elif self.linalg_backend == "scipy":
 
@@ -41,13 +44,13 @@ class __RegBackend:
                 return scipy.linalg.inv(M)
 
             elif self.inverse_method == "svd":
-                S, V, D = scipy.linalg.svd(M)
-                D = 1.0/np.diag(D)
-                return V @ (D * U.T)
+                U, S, VH = scipy.linalg.svd(M)
+                S = np.diag(1.0/S)
+                return U @ S @ VH
 
-    def __check_if_fitted(self, f):
+    def _check_if_fitted(self):
         """Small check if fit has been performed."""
-        assert self.__fit_performed, "Fit not performed"
+        assert self._fit_performed, "Fit not performed"
 
     def score(self, X_test, y_true):
         """Returns the R^2 score.
@@ -64,7 +67,7 @@ class __RegBackend:
 
     def beta_variance(self):
         """Returns the variance of beta."""
-        self.__check_if_fitted()
+        self._check_if_fitted()
         return self.coef_var
 
     def predict(self, X_test):
@@ -76,7 +79,7 @@ class __RegBackend:
         Returns:
             ndarray: test values for X_test
         """
-        self.__check_if_fitted()
+        self._check_if_fitted()
         return X_test @ self.coef
 
 
@@ -88,6 +91,14 @@ class LinearRegression(__RegBackend):
     """
 
     def __init__(self, **kwargs):
+        """Initilizer for Linear Regression
+
+        Args:
+            linalg_backend (str): optional, default is "numpy". Choices: 
+                numpy, scipy.
+            inverse_method (str): optional, default is "svd". Choices:
+                svd, inv.
+        """
         super().__init__(**kwargs)
         self.X_train = None
         self.y_train = None
@@ -111,7 +122,7 @@ class LinearRegression(__RegBackend):
         self.XTX = self.X_train.T @ self.X_train
 
         # (X^T * X)^{-1}
-        self.XTX_inv = self.__inv(self.XTX)
+        self.XTX_inv = self._inv(self.XTX)
 
         # Beta fit values: beta = (X^T * X)^{-1} @ X^T @ y
         self.coef = self.XTX_inv @ self.X_train.T @ self.y_train
@@ -123,13 +134,13 @@ class LinearRegression(__RegBackend):
         self.eps = self.y_train - self.y_approx
 
         # Variance of y approximate values. sigma^2
-        self.y_variance = np.sum(eps**2) / float(self.N)
+        self.y_variance = np.sum(self.eps**2) / float(self.N)
 
         # Beta fit covariance/variance. (X^T * X)^{-1} * sigma^2
         self.coef_cov = self.XTX_inv * self.y_variance
         self.coef_var = np.diag(self.coef_cov)
 
-        self.__fit_performed = True
+        self._fit_performed = True
 
 
 class RidgeRegression(__RegBackend):
@@ -168,7 +179,7 @@ class RidgeRegression(__RegBackend):
 
         # (X^T * X)^{-1}
         self.XTX_aI = self.XTX + self.alpha*np.eye(self.XTX.shape[0])
-        self.XTX_aI_inv = self.__inv(self.XTX_aI)
+        self.XTX_aI_inv = self._inv(self.XTX_aI)
 
         # Beta fit values: beta = (X^T * X)^{-1} @ X^T @ y
         self.coef = self.XTX_aI_inv @ self.X_train @ self.y_train
@@ -189,7 +200,7 @@ class RidgeRegression(__RegBackend):
         self.coef_cov *= self.XTX_aI_inv @ self.XTX @ self.XTX_aI_inv.T
         self.coef_var = self.__diag(self.coef_cov)
 
-        self.__fit_performed = True
+        self._fit_performed = True
 
 
 class LassoRegression(__RegBackend):
