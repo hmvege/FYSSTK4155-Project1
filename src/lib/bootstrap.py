@@ -62,8 +62,22 @@ class BootstrapRegression:
     _design_matrix = None
     _func_excact = None
 
-    def __init__(self, data):
+    # def __init__(self, x_data, y_data, reg_method=None, 
+    #     design_matrix_function=None):
+    #     """
+    #     Initialises an bootstrap regression object.
+    #     Args:
+    #     """
+    #     self.x_data = x_data
+    #     self.y_data = y_data
+
+    def __init__(self, data, y=None):
+        """
+        Initialises an bootstrap regression object.
+        Args:
+        """
         self.data = data
+        self.y = y
 
     @property
     def design_matrix(self):
@@ -102,7 +116,10 @@ class BootstrapRegression:
 
         assert not isinstance(self._reg, type(None))
         assert not isinstance(self._design_matrix, type(None))
-        assert not isinstance(self._func_excact, type(None))
+        if isinstance(self._func_excact, type(None)) and \
+           isinstance(self.y, type(None)):
+           raise AssertionError("either provide a function "
+                "to run data through, or provide the resulting data")
 
         assert test_percent < 1.0, "test_percent must be less than one."
 
@@ -114,7 +131,10 @@ class BootstrapRegression:
         test_size = int(test_size)
 
         x = self.data
-        y = self._func_excact(x)
+        if not isinstance(self._func_excact, type(None)):
+            y = self._func_excact(x)
+        else:
+            y = self.y
 
         # Splits into training and test set.
         x_test, x_train = np.split(x, [test_size], axis=0)
@@ -150,27 +170,23 @@ class BootstrapRegression:
 
             # Stores the predicted variables for post calculation
             self.y_pred_list[i_bs] = y_predict.ravel()
-            self.y_test_list[i_bs] = y_test.ravel()
+            # self.y_test_list[i_bs] = y_test.ravel()
 
         # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
         self.R2 = np.mean(R2_list)
 
         # Mean Square Error, mean((y - y_approx)**2)
-        self.MSE = np.mean(np.mean((self.y_test_list - self.y_pred_list)**2, 
-            axis=0, keepdims=True))
+        mse_temp = np.mean((y_test.ravel() - self.y_pred_list)**2, 
+            axis=0, keepdims=True)
+        self.MSE = np.mean(mse_temp)
         
         # Bias, (y - mean(y_approx))^2
-        self.bias = np.mean((self.y_test_list - np.mean(self.y_pred_list, 
+        self.bias = np.mean((y_test.ravel() - np.mean(self.y_pred_list, 
             axis=0, keepdims=True))**2)
 
         # Variance, var(y_approx)
         self.var = np.mean(np.var(self.y_pred_list, 
             axis=0, keepdims=True))
-
-        print(self.MSE, self.bias, self.var, self.bias+self.var,
-            abs(self.bias+self.var-self.MSE))
-
-
 
 
 def __test_bootstrap():
@@ -219,6 +235,10 @@ def __test_bootstrap():
     print("MSE:   {:-20.16f}".format(bs_reg.MSE))
     print("Bias^2:{:-20.16f}".format(bs_reg.bias))
     print("Var(y):{:-20.16f}".format(bs_reg.var))
+    print("MSE = Bias^2 + Var(y) = ")
+    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var, 
+        bs_reg.bias + bs_reg.var))
+    print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
 
     # TODO recreate plot as shown on piazza
 

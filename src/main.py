@@ -190,9 +190,9 @@ def part1():
                               np.sqrt(np.ravel(beta_variance)))):
         print("Beta_{2} = {0:.6f} +/- {1:.6f}".format(*b, i))
 
-    # # _plot_simple_surface(x, y, z)
-    # # _plot_simple_surface(x_new.reshape((N, N)), y_new.reshape(
-    # #     (N, N)), z_new_predict.reshape((N, N)))
+    # _plot_simple_surface(x, y, z)
+    _plot_simple_surface(x_new.reshape(N, N), y_new.reshape(
+        N, N), z_new_predict.reshape(N, N))
 
 
 def main():
@@ -202,7 +202,7 @@ def main():
     # print(os.listdir(abs_folder_path))
     # franke_function_example()
     part1()
-
+    plt.show()
 
 if __name__ == '__main__':
     main()
