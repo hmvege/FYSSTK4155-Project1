@@ -118,7 +118,6 @@ class kFoldCrossValidation(__CV_core):
         R2_list = np.empty(k_splits)
 
         self.y_pred_list = np.empty((k_splits, holdout_test_size))
-        self.y_test_list = np.empty((k_splits, holdout_test_size))
 
         for ik in tqdm(range(k_splits), desc="k-fold Cross Validation"):
             # Gets the testing data
@@ -194,7 +193,7 @@ class kkFoldCrossValidation(__CV_core):
         bias_arr = np.empty(k_holdout)
 
         for i_holdout in tqdm(range(k_holdout),
-                              descr="Nested k fold Cross Validation"):
+                              desc="Nested k fold Cross Validation"):
 
             # Gets the testing holdout data to be used. Makes sure to use
             # every holdout test data once.
@@ -284,13 +283,14 @@ class MCCrossValidation(__CV_core):
     https://stats.stackexchange.com/questions/51416/k-fold-vs-monte-carlo-cross-validation
     """
 
-    def cross_validate(self, k_percent=0.2, holdout_percent=0.2):
+    def cross_validate(self, N_mc_crossvalidations, k_percent=0.2,
+                       holdout_percent=0.2):
         """
         Args:
             k_percent (float): percentage of the data which is to be used
                 for cross validation. Default is 0.2
         """
-        raise NotImplementedError("Not implemnted MC k fold CV")
+        # raise NotImplementedError("Not implemnted MC CV")
 
         N_total_size = len(self.x_data)
 
@@ -299,99 +299,82 @@ class MCCrossValidation(__CV_core):
         k_holdout, holdout_test_size = self._get_split_percent(
             holdout_percent, N_total_size, enforce_equal_intervals=False)
 
-        # # Splits X data and design matrix data
-        # x_holdout_data = np.split(self.x_data, k_holdout, axis=0)
-        # y_holdout_data = np.split(self.y_data, k_holdout, axis=0)
+        # Splits X data and design matrix data
+        x_holdout_test, x_mc_train = np.split(self.x_data,
+                                              [holdout_test_size], axis=0)
+        y_holdout_test, y_mc_train = np.split(self.y_data,
+                                              [holdout_test_size], axis=0)
 
-        # Sets up some arrays for storing the different MSE, bias, var, R^2
-        # scores.
-        MSE_arr = np.empty(k_holdout)
-        R2_arr = np.empty(k_holdout)
-        var_arr = np.empty(k_holdout)
-        bias_arr = np.empty(k_holdout)
+        N_mc_data = len(x_mc_train)
 
-        for i_holdout in range(k_holdout):
-            # Gets the testing holdout data to be used. Makes sure to use
-            # every holdout test data once.
-            x_holdout_test = x_holdout_data[i_holdout]
-            y_holdout_test = y_holdout_data[i_holdout]
+        # Sets up the holdout design matrix
+        X_holdout_test = self._design_matrix(x_holdout_test)
 
-            # Sets up indexes
-            holdout_set_list = list(range(k_holdout))
-            holdout_set_list.pop(i_holdout)
+        # Splits dataset into managable k fold tests
+        _, mc_test_size = self._get_split_percent(
+            k_percent, N_mc_data)
 
-            # Sets up new holdout data sets
-            x_holdout_train = np.concatenate(
-                [x_holdout_data[d] for d in holdout_set_list])
-            y_holdout_train = np.concatenate(
-                [y_holdout_data[d] for d in holdout_set_list])
+        # Splits kfold train data into k actual folds
+        # x_subdata = np.array_split(x_kfold_train, k_splits, axis=0)
+        # y_subdata = np.array_split(y_kfold_train, k_splits, axis=0)
 
-            # Sets up the holdout design matrix
-            X_holdout_test = self._design_matrix(x_holdout_test)
+        # All possible indices available
+        mc_indices = list(range(N_mc_data))
 
-            # Splits dataset into managable k fold tests
-            N_holdout_data = len(x_holdout_train)
-            k_splits, test_size = self._get_split_percent(
-                k_percent, N_holdout_data)
+        # Stores the test values from each k trained data set in an array
+        R2_list = np.empty(N_mc_crossvalidations)
 
-            # Splits kfold train data into k actual folds
-            x_subdata = np.array_split(x_holdout_train, k_splits, axis=0)
-            y_subdata = np.array_split(y_holdout_train, k_splits, axis=0)
+        self.y_pred_list = np.empty((N_mc_crossvalidations, holdout_test_size))
 
-            # Stores the test values from each k trained data set in an array
-            R2_list = np.empty(k_splits)
+        for i_mc in tqdm(range(N_mc_crossvalidations),
+                         desc="Monte Carlo Cross Validation"):
 
-            self.y_pred_list = np.empty((k_splits, holdout_test_size))
-            # self.y_test_list = np.empty((k_splits, holdout_test_size))
+            # Gets retrieves indexes for MC-CV. No replacement.
+            mccv_test_indexes = np.random.choice(mc_indices, mc_test_size)
+            mccv_train_indices = np.array(
+                list(set(mc_indices) - set(mccv_test_indexes)))
 
-            for ik in range(k_splits):
-                # Gets the testing data
-                k_x_test = x_subdata[ik]
-                k_y_test = y_subdata[ik]
+            # Gets the testing data
+            k_x_test = x_mc_train[mccv_test_indexes]
+            k_y_test = x_mc_train[mccv_test_indexes]
 
-                X_test = self._design_matrix(k_x_test)
+            X_test = self._design_matrix(k_x_test)
 
-                # Sets up indexes
-                set_list = list(range(k_splits))
-                set_list.pop(ik)
+            # # Sets up indexes
+            # set_list = list(range(k_splits))
+            # set_list.pop(ik)
 
-                # Sets up new data set
-                k_x_train = np.concatenate([x_subdata[d] for d in set_list])
-                k_y_train = np.concatenate([y_subdata[d] for d in set_list])
+            # Sets up new data set
+            k_x_train = x_mc_train[mccv_train_indices]
+            k_y_train = y_mc_train[mccv_train_indices]
 
-                # Sets up function to predict
-                X_train = self._design_matrix(k_x_train)
+            # Sets up function to predict
+            X_train = self._design_matrix(k_x_train)
 
-                # Trains method bu fitting data
-                self.reg.fit(X_train, k_y_train)
+            # Trains method bu fitting data
+            self.reg.fit(X_train, k_y_train)
 
-                # Getting a prediction given the test data
-                y_predict = self.reg.predict(X_holdout_test).ravel()
+            # Getting a prediction given the test data
+            y_predict = self.reg.predict(X_holdout_test).ravel()
 
-                # # Appends R2, MSE, coef scores to list
-                self.y_pred_list[ik] = y_predict
+            # # Appends R2, MSE, coef scores to list
+            self.y_pred_list[i_mc] = y_predict
 
-            # Mean Square Error, mean((y - y_approx)**2)
-            _mse = (y_holdout_test - self.y_pred_list)**2
-            MSE_arr[i_holdout] = np.mean(np.mean(_mse, axis=0, keepdims=True))
+        # Mean Square Error, mean((y - y_approx)**2)
+        _mse = (y_holdout_test - self.y_pred_list)**2
+        self.MSE = np.mean(np.mean(_mse, axis=0, keepdims=True))
 
-            # Bias, (y - mean(y_approx))^2
-            _mean_pred = np.mean(self.y_pred_list, axis=0, keepdims=True)
-            _bias = y_holdout_test - _mean_pred
-            bias_arr[i_holdout] = np.mean(_bias**2)
+        # Bias, (y - mean(y_approx))^2
+        _mean_pred = np.mean(self.y_pred_list, axis=0, keepdims=True)
+        _bias = y_holdout_test - _mean_pred
+        self.bias = np.mean(_bias**2)
 
-            # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
-            _R2 = metrics.R2(self.y_pred_list, y_holdout_test, axis=1)
-            R2_arr[i_holdout] = np.mean(_R2)
+        # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
+        _R2 = metrics.R2(self.y_pred_list, y_holdout_test, axis=1)
+        self.R2 = np.mean(_R2)
 
-            # Variance, var(y_predictions)
-            _var = np.var(self.y_pred_list, axis=0, keepdims=True)
-            var_arr[i_holdout] = np.mean(_var)
-
-        self.var = np.mean(var_arr)
-        self.bias = np.mean(bias_arr)
-        self.R2 = np.mean(R2_arr)
-        self.MSE = np.mean(MSE_arr)
+        # Variance, var(y_predictions)
+        self.var = np.mean(np.var(self.y_pred_list, axis=0, keepdims=True))
 
 
 def __test_k_fold_cross_validation():
@@ -441,7 +424,6 @@ def __test_k_fold_cross_validation():
                                      cv.bias + cv.var))
     print("Diff: {}".format(abs(cv.bias + cv.var - cv.MSE)))
 
-    exit(1)
     print("kk Cross Validation")
     kkcv = kkFoldCrossValidation(x, y, LinearRegression, design_matrix)
     kkcv.cross_validate(k_percent=0.25)
@@ -455,8 +437,8 @@ def __test_k_fold_cross_validation():
     print("Diff: {}".format(abs(kkcv.bias + kkcv.var - kkcv.MSE)))
 
     print("Monte Carlo Cross Validation")
-    mccv = MCFoldCrossValidation(x, y, LinearRegression, design_matrix)
-    mccv.cross_validate(k_percent=0.25)
+    mccv = MCCrossValidation(x, y, LinearRegression, design_matrix)
+    mccv.cross_validate(10000, k_percent=0.25)
     print("R2:    {:-20.16f}".format(mccv.R2))
     print("MSE:   {:-20.16f}".format(mccv.MSE))
     print("Bias^2:{:-20.16f}".format(mccv.bias))
@@ -466,11 +448,7 @@ def __test_k_fold_cross_validation():
                                      mccv.bias + mccv.var))
     print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
-
-def __test_mc_cross_validation():
-    pass
-
+    print("\nCross Validation methods tested.")
 
 if __name__ == '__main__':
-    __test_k_fold_cross_validation()
-    __test_mc_cross_validation()
+    __test_cross_validation_methods()
