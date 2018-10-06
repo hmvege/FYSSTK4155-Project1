@@ -1,5 +1,9 @@
+#!/usr/bin/env python3
 import numpy as np
-import metrics
+try:
+    import lib.metrics as metrics
+except ModuleNotFoundError:
+    import metrics
 from tqdm import tqdm
 
 __all__ = ["kFoldCrossValidation", "MCCrossValidation"]
@@ -78,6 +82,22 @@ class __CV_core:
         """
         self._reg = reg(**kwargs)
 
+    @property
+    def coef_(self):
+        return self.coef_coefs
+
+    @coef_.getter
+    def coef_(self):
+        return self.beta_coefs
+    
+    @property
+    def coef_var(self):
+        return self.beta_coefs_var
+
+    @coef_var.getter
+    def coef_var(self):
+        return self.beta_coefs_var
+
 
 class kFoldCrossValidation(__CV_core):
     """Class for performing k-fold cross validation."""
@@ -116,7 +136,7 @@ class kFoldCrossValidation(__CV_core):
 
         # Stores the test values from each k trained data set in an array
         R2_list = np.empty(k_splits)
-
+        beta_coefs = []
         self.y_pred_list = np.empty((k_splits, holdout_test_size))
 
         for ik in tqdm(range(k_splits), desc="k-fold Cross Validation"):
@@ -143,8 +163,10 @@ class kFoldCrossValidation(__CV_core):
             # Getting a prediction given the test data
             y_predict = self.reg.predict(X_holdout_test).ravel()
 
-            # # Appends R2, MSE, coef scores to list
+            # Appends prediction and beta coefs
             self.y_pred_list[ik] = y_predict
+            beta_coefs.append(self.reg.coef_)
+
 
         # Mean Square Error, mean((y - y_approx)**2)
         _mse = (y_holdout_test - self.y_pred_list)**2
@@ -161,6 +183,10 @@ class kFoldCrossValidation(__CV_core):
 
         # Variance, var(y_predictions)
         self.var = np.mean(np.var(self.y_pred_list, axis=0, keepdims=True))
+
+        beta_coefs = np.asarray(beta_coefs)
+        self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
+        self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
 
 
 class kkFoldCrossValidation(__CV_core):
@@ -191,6 +217,8 @@ class kkFoldCrossValidation(__CV_core):
         R2_arr = np.empty(k_holdout)
         var_arr = np.empty(k_holdout)
         bias_arr = np.empty(k_holdout)
+
+        beta_coefs = []
 
         for i_holdout in tqdm(range(k_holdout),
                               desc="Nested k fold Cross Validation"):
@@ -252,8 +280,9 @@ class kkFoldCrossValidation(__CV_core):
                 # Getting a prediction given the test data
                 y_predict = self.reg.predict(X_holdout_test).ravel()
 
-                # # Appends R2, MSE, coef scores to list
+                # Appends prediction and beta coefs
                 self.y_pred_list[ik] = y_predict
+                beta_coefs.append(self.reg.coef_)
 
             # Mean Square Error, mean((y - y_approx)**2)
             _mse = (y_holdout_test - self.y_pred_list)**2
@@ -276,6 +305,9 @@ class kkFoldCrossValidation(__CV_core):
         self.bias = np.mean(bias_arr)
         self.R2 = np.mean(R2_arr)
         self.MSE = np.mean(MSE_arr)
+        beta_coefs = np.asarray(beta_coefs)
+        self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
+        self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
 
 
 class MCCrossValidation(__CV_core):
@@ -323,7 +355,7 @@ class MCCrossValidation(__CV_core):
 
         # Stores the test values from each k trained data set in an array
         R2_list = np.empty(N_mc_crossvalidations)
-
+        beta_coefs = []
         self.y_pred_list = np.empty((N_mc_crossvalidations, holdout_test_size))
 
         for i_mc in tqdm(range(N_mc_crossvalidations),
@@ -351,14 +383,16 @@ class MCCrossValidation(__CV_core):
             # Sets up function to predict
             X_train = self._design_matrix(k_x_train)
 
+
             # Trains method bu fitting data
             self.reg.fit(X_train, k_y_train)
 
             # Getting a prediction given the test data
             y_predict = self.reg.predict(X_holdout_test).ravel()
 
-            # # Appends R2, MSE, coef scores to list
+            # Appends prediction and beta coefs
             self.y_pred_list[i_mc] = y_predict
+            beta_coefs.append(self.reg.coef_)
 
         # Mean Square Error, mean((y - y_approx)**2)
         _mse = (y_holdout_test - self.y_pred_list)**2
@@ -376,8 +410,11 @@ class MCCrossValidation(__CV_core):
         # Variance, var(y_predictions)
         self.var = np.mean(np.var(self.y_pred_list, axis=0, keepdims=True))
 
+        beta_coefs = np.asarray(beta_coefs)
+        self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
+        self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
 
-def __test_k_fold_cross_validation():
+def __test_cross_validation_methods():
     # A small implementation of a test case
     from regression import LinearRegression
     import matplotlib.pyplot as plt

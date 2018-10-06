@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 import numpy as np
 
 
-__all__ = ["mse", "R2", "bias"]
+__all__ = ["mse", "R2", "bias", "timing_function"]
 
 
 def mse(y_excact, y_predict, axis=0):
@@ -46,8 +47,6 @@ def R2(y_excact, y_predict, axis=0):
         np.sum((y_excact - np.mean(y_excact, axis=axis, keepdims=True))**2, axis=axis)
 
 
-# TODO: add method for finding bias
-
 def bias2(y_excact, y_predict, axis=0):
     """Bias^2 of a excact y and a predicted y
 
@@ -62,15 +61,21 @@ def bias2(y_excact, y_predict, axis=0):
     return np.mean((y_predict - np.mean(y_excact, keepdims=True, axis=axis))**2)
 
 
-def variance(y):
-    """Variance between excact and predicted values.
+def timing_function(func):
+    """Time function decorator."""
+    import time
+    def wrapper(*args, **kwargs):
+        t1 = time.clock()
+        
+        val = func(*args, **kwargs)
 
-    # TODO: remove this, as it is a completely, utterly redundant function.
+        t2 = time.clock()
 
-    Args:
-        y (ndarray): response/outcome/dependent variable, size (N_samples, 1)
+        time_used = t2-t1
+        
+        print ("Time used with function {:s}: {:.10f} secs/ "
+            "{:.10f} minutes".format(func.__name__, time_used, time_used/60.))
+        
+        return val
 
-    Returns
-        float: Var(y)
-    """
-    return np.mean((y - np.mean(y))**2)
+    return wrapper

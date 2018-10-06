@@ -1,5 +1,9 @@
+#!/usr/bin/env python3
 import numpy as np
-import metrics
+try:
+    import lib.metrics as metrics
+except ModuleNotFoundError:
+    import metrics
 from tqdm import tqdm
 
 
@@ -89,6 +93,23 @@ class BootstrapRegression:
     def reg(self, reg, **kwargs):
         self._reg = reg(**kwargs)
 
+    @property
+    def coef_(self):
+        return self.coef_coefs
+
+    @coef_.getter
+    def coef_(self):
+        return self.beta_coefs
+
+    @property
+    def coef_var(self):
+        return self.beta_coefs_var
+
+    @coef_var.getter
+    def coef_var(self):
+        return self.beta_coefs_var
+
+    @metrics.timing_function
     def bootstrap(self, N_bs, test_percent=0.25):
         """
         Performs a bootstrap for a given regression type, design matrix 
@@ -122,13 +143,13 @@ class BootstrapRegression:
         # Sets up emtpy lists for gathering the relevant scores in
         R2_list = np.empty(N_bs)
         # MSE_list = np.empty(N_bs)
-        # bias_list = np.empty((N_bs, test_size))
-        # var_list = np.empty((N_bs, test_size))
+        # bias_list = np.empty(N_bs)
+        # var_list = np.empty(N_bs)
+        beta_coefs = []
 
         X_test = self._design_matrix(x_test)
 
         self.y_pred_list = np.empty((N_bs, test_size))
-        self.y_test_list = np.empty((N_bs, test_size))
 
         # Bootstraps
         for i_bs in tqdm(range(N_bs), desc="Bootstrapping"):
@@ -146,10 +167,15 @@ class BootstrapRegression:
 
             # Calculates R2
             R2_list[i_bs] = metrics.R2(y_predict, y_test)
+            # MSE_list[i_bs] = metrics.mse(y_predict, y_test)
+            # bias_list[i_bs] = metrics.bias2(y_predict, y_test)
+            # var_list[i_bs] = np.var(y_predict)
 
-            # Stores the predicted variables for post calculation
+            # Stores the prediction and beta coefs.
             self.y_pred_list[i_bs] = y_predict.ravel()
-            # self.y_test_list[i_bs] = y_test.ravel()
+            beta_coefs.append(self.reg.coef_)
+
+        # pred_list_bs = np.mean(self.y_pred_list, axis=0)
 
         # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
         self.R2 = np.mean(R2_list)
@@ -167,17 +193,28 @@ class BootstrapRegression:
         self.var = np.mean(np.var(self.y_pred_list,
                                   axis=0, keepdims=True))
 
+        beta_coefs = np.asarray(beta_coefs)
 
-def __test_bootstrap():
+        self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
+        self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
+
+        # print("R2:    ", R2_list.mean())
+        # print("MSE:   ", MSE_list.mean())
+        # print("bias2: ", bias_list.mean())
+        # print("var:   ", var_list.mean())
+
+
+def __test_bootstrap_fit():
         # A small implementation of a test case
     from regression import LinearRegression
 
-    N_bs = 200
+    N_bs = 1000
 
     # Initial values
     n = 200
     noise = 0.2
     np.random.seed(1234)
+    test_percent = 0.35
 
     # Sets up random matrices
     x = np.random.rand(n, 1)
@@ -201,16 +238,21 @@ def __test_bootstrap():
     print("Regular linear regression")
     print("R2:  {:-20.16f}".format(reg.score(y_predict, y)))
     print("MSE: {:-20.16f}".format(metrics.mse(y, y_predict)))
+    print("Beta:      ", reg.coef_.ravel())
+    print("var(Beta): ", reg.coef_var.ravel())
+    print("")
 
     # Performs a bootstrap
     print("Bootstrapping")
     bs_reg = BootstrapRegression(x, y, LinearRegression, design_matrix)
-    bs_reg.bootstrap(N_bs, test_percent=0.4)
+    bs_reg.bootstrap(N_bs, test_percent=test_percent)
 
     print("R2:    {:-20.16f}".format(bs_reg.R2))
     print("MSE:   {:-20.16f}".format(bs_reg.MSE))
     print("Bias^2:{:-20.16f}".format(bs_reg.bias))
     print("Var(y):{:-20.16f}".format(bs_reg.var))
+    print("Beta:      ", bs_reg.coef_.ravel())
+    print("var(Beta): ", bs_reg.coef_var.ravel())
     print("MSE = Bias^2 + Var(y) = ")
     print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
                                      bs_reg.bias + bs_reg.var))
@@ -219,5 +261,29 @@ def __test_bootstrap():
     # TODO recreate plot as shown on piazza
 
 
+def __test_bootstrap():
+    import matplotlib.pyplot as plt
+    # Data to load and analyse
+    data = np.random.normal(0, 2, 100)
+
+    bs_data = np.empty((500, 100))
+    # Histogram bins
+    N_bins = 20
+
+    # Bootstrapping
+    N_bootstraps = int(500)
+    for iboot in range(N_bootstraps):
+        bs_data[iboot] = np.asarray(boot(data))
+
+    print(data.mean(), data.std())
+    bs_data = bs_data.mean(axis=0)
+    print(bs_data.mean(), bs_data.std())
+
+    plt.hist(data, label="Data")
+    plt.hist(bs_data, label="Bootstrap")
+    plt.show()
+
+
 if __name__ == '__main__':
-    __test_bootstrap()
+    __test_bootstrap_fit()
+    # __test_bootstrap()

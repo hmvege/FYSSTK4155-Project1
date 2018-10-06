@@ -18,3 +18,5 @@ latex.out
 latexrun
 *pro.user
 __pycache__
+*.pyc
+*.bib

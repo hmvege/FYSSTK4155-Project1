@@ -1,6 +1,10 @@
+#!/usr/bin/env python3
 import numpy as np
 import scipy.linalg
-import metrics
+try:
+    import lib.metrics as metrics
+except ModuleNotFoundError:
+    import metrics
 
 # help(super)
 
@@ -52,7 +56,7 @@ class __RegBackend:
         """Small check if fit has been performed."""
         assert self._fit_performed, "Fit not performed"
 
-    def score(self, y_test, y_true):
+    def score(self, y_true, y_test):
         """Returns the R^2 score.
 
         Args:
@@ -69,6 +73,14 @@ class __RegBackend:
         self._check_if_fitted()
         return self.coef_var
 
+    def get_y_variance(self):
+        if hasattr(self, "y_variance"):
+            return self.y_variance
+        else:
+            raise AttributeError(
+                ("Class {:s} does not contain "
+                    "y_variance.".format(self.__class__)))
+
     def predict(self, X_test):
         """Performs a prediction for given beta coefs.
 
@@ -80,6 +92,28 @@ class __RegBackend:
         """
         self._check_if_fitted()
         return X_test @ self.coef
+
+    def get_results(self):
+        """Method for retrieving results from fit.
+
+        Returns:
+            y_approx (ndarray): y approximated on training data x.
+            beta (ndarray):  the beta fit paramters.
+            beta_cov (ndarray): covariance matrix of the beta values.
+            beta_var (ndarray): variance of the beta values.
+            eps (ndarray): the residues of y_train and y_approx.
+
+        """
+        return self.y_approx, self.coef, self.coef_cov, self.coef_var, self.eps
+
+    @property
+    def coef_(self):
+        return self.coef
+
+    @coef_.getter
+    def coef_(self):
+        return self.coef
+    
 
 
 class LinearRegression(__RegBackend):
@@ -223,8 +257,8 @@ class LassoRegression(__RegBackend):
 
 
 if __name__ == '__main__':
-    TestLinear = LinearRegression()
-    TestRidge = RidgeRegression()
-    TestLasso = LassoRegression()
+    # TestLinear = LinearRegression()
+    # TestRidge = RidgeRegression()
+    # TestLasso = LassoRegression()
 
     exit("regression.py not intended as a standalone module.")
