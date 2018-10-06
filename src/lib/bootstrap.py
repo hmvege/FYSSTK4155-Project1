@@ -1,5 +1,6 @@
 import numpy as np
 import metrics
+from tqdm import tqdm
 
 
 def boot(*data):
@@ -60,24 +61,17 @@ class BootstrapRegression:
     """Bootstrap class intended for use together with regression."""
     _reg = None
     _design_matrix = None
-    _func_excact = None
 
-    # def __init__(self, x_data, y_data, reg_method=None, 
-    #     design_matrix_function=None):
-    #     """
-    #     Initialises an bootstrap regression object.
-    #     Args:
-    #     """
-    #     self.x_data = x_data
-    #     self.y_data = y_data
-
-    def __init__(self, data, y=None):
+    def __init__(self, x_data, y_data, reg, design_matrix_func):
         """
         Initialises an bootstrap regression object.
         Args:
         """
-        self.data = data
-        self.y = y
+        assert len(x_data) == len(y_data), "x and y data not of equal lengths"
+        self.x_data = x_data
+        self.y_data = y_data
+        self._reg = reg()
+        self._design_matrix = design_matrix_func
 
     @property
     def design_matrix(self):
@@ -95,14 +89,6 @@ class BootstrapRegression:
     def reg(self, reg, **kwargs):
         self._reg = reg(**kwargs)
 
-    @property
-    def func_excact(self):
-        return self._func_excact
-
-    @func_excact.setter
-    def func_excact(self, f):
-        self._func_excact = f
-
     def bootstrap(self, N_bs, test_percent=0.25):
         """
         Performs a bootstrap for a given regression type, design matrix 
@@ -116,25 +102,18 @@ class BootstrapRegression:
 
         assert not isinstance(self._reg, type(None))
         assert not isinstance(self._design_matrix, type(None))
-        if isinstance(self._func_excact, type(None)) and \
-           isinstance(self.y, type(None)):
-           raise AssertionError("either provide a function "
-                "to run data through, or provide the resulting data")
 
         assert test_percent < 1.0, "test_percent must be less than one."
 
-        N = len(self.data)
+        N = len(self.x_data)
 
         # Splits into k intervals
         test_size = np.floor(N * test_percent)
         k = int(N / test_size)
         test_size = int(test_size)
 
-        x = self.data
-        if not isinstance(self._func_excact, type(None)):
-            y = self._func_excact(x)
-        else:
-            y = self.y
+        x = self.x_data
+        y = self.y_data
 
         # Splits into training and test set.
         x_test, x_train = np.split(x, [test_size], axis=0)
@@ -152,7 +131,7 @@ class BootstrapRegression:
         self.y_test_list = np.empty((N_bs, test_size))
 
         # Bootstraps
-        for i_bs in range(N_bs):
+        for i_bs in tqdm(range(N_bs), desc="Bootstrapping"):
             # Bootstraps test data
             x_boot, y_boot = boot(x_test, y_test)
 
@@ -176,17 +155,17 @@ class BootstrapRegression:
         self.R2 = np.mean(R2_list)
 
         # Mean Square Error, mean((y - y_approx)**2)
-        mse_temp = np.mean((y_test.ravel() - self.y_pred_list)**2, 
-            axis=0, keepdims=True)
-        self.MSE = np.mean(mse_temp)
-        
+        _mse = np.mean((y_test.ravel() - self.y_pred_list)**2,
+                       axis=0, keepdims=True)
+        self.MSE = np.mean(_mse)
+
         # Bias, (y - mean(y_approx))^2
-        self.bias = np.mean((y_test.ravel() - np.mean(self.y_pred_list, 
-            axis=0, keepdims=True))**2)
+        _y_pred_mean = np.mean(self.y_pred_list, axis=0, keepdims=True)
+        self.bias = np.mean((y_test.ravel() - _y_pred_mean)**2)
 
         # Variance, var(y_approx)
-        self.var = np.mean(np.var(self.y_pred_list, 
-            axis=0, keepdims=True))
+        self.var = np.mean(np.var(self.y_pred_list,
+                                  axis=0, keepdims=True))
 
 
 def __test_bootstrap():
@@ -225,10 +204,7 @@ def __test_bootstrap():
 
     # Performs a bootstrap
     print("Bootstrapping")
-    bs_reg = BootstrapRegression(x)
-    bs_reg.reg = LinearRegression
-    bs_reg.func_excact = func_excact
-    bs_reg.design_matrix = design_matrix
+    bs_reg = BootstrapRegression(x, y, LinearRegression, design_matrix)
     bs_reg.bootstrap(N_bs, test_percent=0.4)
 
     print("R2:    {:-20.16f}".format(bs_reg.R2))
@@ -236,8 +212,8 @@ def __test_bootstrap():
     print("Bias^2:{:-20.16f}".format(bs_reg.bias))
     print("Var(y):{:-20.16f}".format(bs_reg.var))
     print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var, 
-        bs_reg.bias + bs_reg.var))
+    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
+                                     bs_reg.bias + bs_reg.var))
     print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
 
     # TODO recreate plot as shown on piazza

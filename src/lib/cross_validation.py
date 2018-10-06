@@ -384,6 +384,9 @@ def __test_k_fold_cross_validation():
 
     # Initial values
     n = 1000
+    N_bs = 200
+    k_fold_size = 0.25
+    holdout_percent = 0.2
     noise = 0.3
     np.random.seed(1234)
 
@@ -414,7 +417,7 @@ def __test_k_fold_cross_validation():
 
     print("k-fold Cross Validation")
     cv = kFoldCrossValidation(x, y, LinearRegression, design_matrix)
-    cv.cross_validate(k_percent=0.25)
+    cv.cross_validate(k_percent=k_fold_size, holdout_percent=holdout_percent)
     print("R2:    {:-20.16f}".format(cv.R2))
     print("MSE:   {:-20.16f}".format(cv.MSE))
     print("Bias^2:{:-20.16f}".format(cv.bias))
@@ -426,7 +429,8 @@ def __test_k_fold_cross_validation():
 
     print("kk Cross Validation")
     kkcv = kkFoldCrossValidation(x, y, LinearRegression, design_matrix)
-    kkcv.cross_validate(k_percent=0.25)
+    kkcv.cross_validate(k_percent=k_fold_size,
+                        holdout_percent=holdout_percent)
     print("R2:    {:-20.16f}".format(kkcv.R2))
     print("MSE:   {:-20.16f}".format(kkcv.MSE))
     print("Bias^2:{:-20.16f}".format(kkcv.bias))
@@ -438,7 +442,8 @@ def __test_k_fold_cross_validation():
 
     print("Monte Carlo Cross Validation")
     mccv = MCCrossValidation(x, y, LinearRegression, design_matrix)
-    mccv.cross_validate(10000, k_percent=0.25)
+    mccv.cross_validate(N_bs, k_percent=k_fold_size,
+                        holdout_percent=holdout_percent)
     print("R2:    {:-20.16f}".format(mccv.R2))
     print("MSE:   {:-20.16f}".format(mccv.MSE))
     print("Bias^2:{:-20.16f}".format(mccv.bias))
@@ -449,6 +454,7 @@ def __test_k_fold_cross_validation():
     print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
     print("\nCross Validation methods tested.")
+
 
 if __name__ == '__main__':
     __test_cross_validation_methods()
