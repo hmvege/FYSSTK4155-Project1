@@ -6,8 +6,6 @@ try:
 except ModuleNotFoundError:
     import metrics
 
-# help(super)
-
 __all__ = ["OLSRegression", "RidgeRegression", "LassoRegression"]
 
 
@@ -131,7 +129,6 @@ class __RegBackend:
     @coef_var.setter
     def coef_var(self, value):
         self.beta_coefs_var = value
-
 
 
 class OLSRegression(__RegBackend):
@@ -282,23 +279,22 @@ def __test_ols_regression(x, y, deg):
 
     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
     X = poly.fit_transform(x, y)
-    
+
     reg = OLSRegression()
     reg.fit(X, y)
     print("R^2: {}".format(reg.score(y, reg.predict(X))))
 
 
-
 def __test_ridge_regression(x, y, deg, alpha=1.0):
-    print("Testing Ridge for degree={} for alpha={}".format(deg,alpha))
+    print("Testing Ridge for degree={} for alpha={}".format(deg, alpha))
     import sklearn.preprocessing as sk_preproc
 
     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
     X = poly.fit_transform(x, y)
-    
+
     reg = RidgeRegression(alpha=alpha)
     reg.fit(X, y)
-    print("R^2: {}".format(reg.score(y, reg.predict(X))))        
+    print("R^2: {}".format(reg.score(y, reg.predict(X))))
 
 
 def __test_regresssions():

@@ -139,7 +139,6 @@ class kFoldCrossValidation(__CV_core):
             k_y_train = np.concatenate([y_subdata[d] for d in set_list])
 
             # Trains method bu fitting data
-            print(help(self.reg.fit))
             self.reg.fit(self._design_matrix(k_x_train), k_y_train)
 
             # Getting a prediction given the test data
