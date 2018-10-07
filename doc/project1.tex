@@ -109,7 +109,7 @@ which is the matrix equation
     Q(\beta) = (\bm{y} - \bm{X}\beta)^T (\bm{y} - \bm{X}\beta)
     \label{eq:ols_minimization_function}
 \end{align}
-The minimum of this function can be found by differentiating by $\beta$ and setting the result equal to zero. 
+This equation is called the \text{cost function}\citep[p. 12]{2018arXiv180308823M}. The minimum of this function can be found by differentiating by $\beta$ and setting the result equal to zero. 
 \begin{align*}
     \frac{\partial Q(\beta)}{\partial\beta_j} &= \frac{\partial}{\partial\beta_j}\sum^{n-1}_{i=0} (y_i - \beta_0 x_{i0} - \beta_1 x_{i1} - \dots \beta_{p-1} x_{i,p-1})^2 \\
     &= -2\sum^{n-1}_{i=0} x_{ij}(y_i - \beta_0 x_{i0} - \beta_1 x_{i1} - \dots \beta_{p-1} x_{i,p-1}) \\
@@ -124,7 +124,7 @@ which we require to be zero in order to find an optimal $\beta$. From this the \
     \bm{\epsilon} = \bm{y} - \tilde{\bm{y}} = \bm{y} - \bm{X}\beta
     \label{eq:ols_residues}
 \end{align}
-The solution should now be obvious. We need to solve for $Q(\beta)=0$\eqref{eq:ols_minimization},
+The solution should now be obvious. We need to solve equation \eqref{eq:ols_minimization} for $Q(\beta)=0$,
 \begin{align*}
     \bm{X}^T (\bm{y} - \bm{X}\beta) = 0.
 \end{align*}
@@ -137,15 +137,21 @@ And thus, the $\beta$-values is simply
     \beta = \left(\bm{X}^T\bm{X}\right)^{-1}\left(\bm{X}^T\bm{X}\right)\bm{y}
     \label{eq:ols_beta}
 \end{align}
-
-
+This solution does not account for errors in the measurements or responses. Say there is an $\sigma_i$ associated with each measured $y_i$, we will have to use the $\chi^2$ function as a our function to minimize\citep[see notes on regression]{morten-regression}. We will have to rescale our solution by $\bm{X} \rightarrow \bm{A}=\bm{X}/\bm{\Sigma}$ where $\Sigma$ is a diagonal matrix of every uncertainty $\sigma_i$.
 
 \subsubsection{Ridge regression}
 \subsubsection{Lasso regression}
 
-\subsection{Mean Square Error(MSE)}
-The mean square error, popularly called MSE is a function that 
+\subection{The Bias-Variance decomposition}
+It is possible to define variance of the predicted values $\tilde{y}$. If we take the estimator of our cost function,
+\begin{align}
+    E[Q(\beta)] = E\left[\right]
+\end{align}
+
+% \subsection{Mean Square Error(MSE)}
+% The mean square error, popularly called MSE is a function that 
 \subsection{\texorpdfstring{$R^2$}{R1} score}
+
 \subsection{Bootstrapping}
 \subsection{\texorpdfstring{$k$}{k}-fold Cross Validation}
 
