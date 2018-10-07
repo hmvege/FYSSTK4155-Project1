@@ -95,6 +95,7 @@ We see that the goal is to minimize the L$_2$ norm between the response $y_i$ an
 To find a solution to the loss function, we can start by observing the dimensions of equation \eqref{eq:linreg_eq},
 \begin{align}
     \underbrace{\vphantom{\beta}\bm{y}}_{\mathbb{R}^{n}} = \underbrace{\vphantom{\beta}\bm{X}}_{\mathbb{R}^{n\times p}} \underbrace{\beta}_{\mathbb{R}^{p}}
+    \label{eq:matrix_eq_solution}
 \end{align}
 We then see that in order to free $\beta$, we must multiply by the transposed of $\bm{X}$ such that we can take the inverse and solve for $\beta$.
 
@@ -115,18 +116,29 @@ The minimum of this function can be found by differentiating by $\beta$ and sett
 \end{align*}
 where the element $x_{ij}$ is picked out by the differentiation w.r.t. $\beta_j$. Performing all of the derivatives leaves us with the matrix equation,
 \begin{align}
-    \frac{\partial Q(\beta)}{\partial\beta} = X^T (\bm{y} - \bm{X}\beta) = 0
+    \frac{\partial Q(\beta)}{\partial\beta} = X^T (\bm{y} - \bm{X}\beta)
     \label{eq:ols_minimization}
 \end{align}
 which we require to be zero in order to find an optimal $\beta$. From this the \textit{residues} or \textit{error vector} $\bm{\epsilon}$ is defined,
 \begin{align}
-    \bm{\epsilon}
+    \bm{\epsilon} = \bm{y} - \tilde{\bm{y}} = \bm{y} - \bm{X}\beta
     \label{eq:ols_residues}
 \end{align}
-
+The solution should now be obvious. We need to solve for $Q(\beta)=0$\eqref{eq:ols_minimization},
+\begin{align*}
+    \bm{X}^T (\bm{y} - \bm{X}\beta) = 0.
+\end{align*}
+As alluded to in \eqref{eq:matrix_eq_solution}, we now need to multiply by the inverse of $\bm{X}^T\bm{X}$, which yields after splitting the parenthesis
+\begin{align*}
+    \left(\bm{X}^T\bm{X}\right)^{-1}\bm{X}^T \bm{y} = \left(\bm{X}^T\bm{X}\right)^{-1}\bm{X}^T\bm{X}\beta)
+\end{align*}
+And thus, the $\beta$-values is simply
 \begin{align}
-    \bm{y} = \beta \bm{X} + \bm{\epsilon}
+    \beta = \left(\bm{X}^T\bm{X}\right)^{-1}\left(\bm{X}^T\bm{X}\right)\bm{y}
+    \label{eq:ols_beta}
 \end{align}
+
+
 
 \subsubsection{Ridge regression}
 \subsubsection{Lasso regression}
@@ -138,12 +150,20 @@ The mean square error, popularly called MSE is a function that
 \subsection{\texorpdfstring{$k$}{k}-fold Cross Validation}
 
 \section{Implementation}
+\cite{scikit-learn}
 \section{Results}
 \section{Discussion and conclusion}
-\cite{scikit-learn}
 
 \section{Appendix} \label{sec:appendix}
 \subsection{The Franke Function}
+As given in \cite{franke1979critical},
+\begin{align}
+    F(x,y) &= 0.75\exp\left(-\left(0.25\left(9x-2\right)^2\right) - 0.25\left(\left(9y-2\right)^2\right)\right) \\
+    &= 0.75\exp\left(-\frac{1}{49}\left(\left(9x+1\right)^2\right) - 0.1\left(9y+1\right)\right) \\
+    &= 0.5\exp\left(-\left(9x-7\right)^2/4.0 - 0.25\left(\left(9y-3\right)^2\right)\right) \\
+    &= -0.2\exp\left(-\left(9x-4\right)^2 - \left(9y-7\right)^2\right)
+    \label{eq:franke_function}
+\end{align}
 
 \bibliography{bib/bibliography.bib}
 \bibliographystyle{plain}
