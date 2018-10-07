@@ -149,7 +149,7 @@ class BootstrapRegression:
 
         X_test = self._design_matrix(x_test)
 
-        self.y_pred_list = np.empty((N_bs, test_size))
+        y_pred_list = np.empty((N_bs, test_size))
 
         # Bootstraps
         for i_bs in tqdm(range(N_bs), desc="Bootstrapping"):
@@ -166,37 +166,41 @@ class BootstrapRegression:
             y_predict = self.reg.predict(X_test)
 
             # Calculates R2
-            R2_list[i_bs] = metrics.R2(y_predict, y_test)
+            R2_list[i_bs] = metrics.R2(y_test, y_predict)
             # MSE_list[i_bs] = metrics.mse(y_predict, y_test)
             # bias_list[i_bs] = metrics.bias2(y_predict, y_test)
             # var_list[i_bs] = np.var(y_predict)
 
             # Stores the prediction and beta coefs.
-            self.y_pred_list[i_bs] = y_predict.ravel()
+            y_pred_list[i_bs] = y_predict.ravel()
             beta_coefs.append(self.reg.coef_)
 
-        # pred_list_bs = np.mean(self.y_pred_list, axis=0)
+        # pred_list_bs = np.mean(y_pred_list, axis=0)
 
         # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
         self.R2 = np.mean(R2_list)
 
         # Mean Square Error, mean((y - y_approx)**2)
-        _mse = np.mean((y_test.ravel() - self.y_pred_list)**2,
+        _mse = np.mean((y_test.ravel() - y_pred_list)**2,
                        axis=0, keepdims=True)
         self.MSE = np.mean(_mse)
 
         # Bias, (y - mean(y_approx))^2
-        _y_pred_mean = np.mean(self.y_pred_list, axis=0, keepdims=True)
+        _y_pred_mean = np.mean(y_pred_list, axis=0, keepdims=True)
         self.bias = np.mean((y_test.ravel() - _y_pred_mean)**2)
 
         # Variance, var(y_approx)
-        self.var = np.mean(np.var(self.y_pred_list,
+        self.var = np.mean(np.var(y_pred_list,
                                   axis=0, keepdims=True))
 
         beta_coefs = np.asarray(beta_coefs)
 
         self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
         self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
+
+        self.x_pred_test = x_test
+        self.y_pred = y_pred_list.mean(axis=0)
+        self.y_pred_var = y_pred_list.var(axis=0)
 
         # print("R2:    ", R2_list.mean())
         # print("MSE:   ", MSE_list.mean())
@@ -219,7 +223,7 @@ def __test_bootstrap_fit():
     # Sets up random matrices
     x = np.random.rand(n, 1)
 
-    def func_excact(_x): return 2*_x*_x + noise * \
+    def func_excact(_x): return 2*_x*_x + np.exp(-2*_x) + noise * \
         np.random.randn(_x.shape[0], _x.shape[1])
 
     y = func_excact(x)
@@ -257,6 +261,20 @@ def __test_bootstrap_fit():
     print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
                                      bs_reg.bias + bs_reg.var))
     print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+
+    import matplotlib.pyplot as plt
+    plt.plot(x.ravel(), y, "o", label="Data")
+    plt.plot(x.ravel(), y_predict, "o", 
+        label=r"Pred, R^2={:.4f}".format(reg.score(y_predict, y)))
+    print (bs_reg.y_pred.shape, bs_reg.y_pred_var.shape)
+    plt.errorbar(bs_reg.x_pred_test, bs_reg.y_pred, 
+        yerr=np.sqrt(bs_reg.y_pred_var), fmt="o", 
+        label=r"Bootstrap Prediction, $R^2={:.4f}$".format(bs_reg.R2))
+    plt.xlabel(r"$x$")
+    plt.ylabel(r"$y$")
+    plt.title(r"$2x^2 + \sigma^2$")
+    plt.legend()
+    plt.show()
 
     # TODO recreate plot as shown on piazza
 

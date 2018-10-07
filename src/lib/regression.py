@@ -16,7 +16,7 @@ class __RegBackend:
     __possible_backends = ["numpy", "scipy"]
     __possible_inverse_methods = ["inv", "svd"]
 
-    def __init__(self, linalg_backend="numpy", inverse_method="svd"):
+    def __init__(self, linalg_backend="scipy", inverse_method="svd"):
         """Sets up the linalg backend."""
         assert linalg_backend in self.__possible_backends, \
             "{:s} backend not recognized".format(str(linalg_backend))
@@ -66,7 +66,7 @@ class __RegBackend:
         Returns:
             float: R2 score for X_test values.
         """
-        return metrics.R2(y_test, y_true)
+        return metrics.R2(y_true, y_test)
 
     def beta_variance(self):
         """Returns the variance of beta."""

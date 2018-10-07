@@ -154,11 +154,8 @@ class kFoldCrossValidation(__CV_core):
             k_x_train = np.concatenate([x_subdata[d] for d in set_list])
             k_y_train = np.concatenate([y_subdata[d] for d in set_list])
 
-            # Sets up function to predict
-            X_train = self._design_matrix(k_x_train)
-
             # Trains method bu fitting data
-            self.reg.fit(X_train, k_y_train)
+            self.reg.fit(self._design_matrix(k_x_train), k_y_train)
 
             # Getting a prediction given the test data
             y_predict = self.reg.predict(X_holdout_test).ravel()
@@ -166,7 +163,6 @@ class kFoldCrossValidation(__CV_core):
             # Appends prediction and beta coefs
             self.y_pred_list[ik] = y_predict
             beta_coefs.append(self.reg.coef_)
-
 
         # Mean Square Error, mean((y - y_approx)**2)
         _mse = (y_holdout_test - self.y_pred_list)**2
@@ -178,7 +174,7 @@ class kFoldCrossValidation(__CV_core):
         self.bias = np.mean(_bias**2)
 
         # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
-        _R2 = metrics.R2(self.y_pred_list, y_holdout_test, axis=1)
+        _R2 = metrics.R2(y_holdout_test, self.y_pred_list, axis=0)
         self.R2 = np.mean(_R2)
 
         # Variance, var(y_predictions)
@@ -187,6 +183,10 @@ class kFoldCrossValidation(__CV_core):
         beta_coefs = np.asarray(beta_coefs)
         self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
         self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
+
+        self.x_pred_test = x_holdout_test
+        self.y_pred = np.mean(self.y_pred_list, axis=0)
+        self.y_pred_var = np.var(self.y_pred_list, axis=0)
 
 
 class kkFoldCrossValidation(__CV_core):
@@ -219,6 +219,9 @@ class kkFoldCrossValidation(__CV_core):
         bias_arr = np.empty(k_holdout)
 
         beta_coefs = []
+        x_pred_test = []
+        y_pred_mean_list = []
+        y_pred_var_list = []
 
         for i_holdout in tqdm(range(k_holdout),
                               desc="Nested k fold Cross Validation"):
@@ -294,12 +297,16 @@ class kkFoldCrossValidation(__CV_core):
             bias_arr[i_holdout] = np.mean(_bias**2)
 
             # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
-            _R2 = metrics.R2(self.y_pred_list, y_holdout_test, axis=1)
+            _R2 = metrics.R2(y_holdout_test, self.y_pred_list, axis=1)
             R2_arr[i_holdout] = np.mean(_R2)
 
             # Variance, var(y_predictions)
             _var = np.var(self.y_pred_list, axis=0, keepdims=True)
             var_arr[i_holdout] = np.mean(_var)
+
+            x_pred_test.append(x_holdout_test)
+            y_pred_mean_list.append(np.mean(self.y_pred_list, axis=0))
+            y_pred_var_list.append(np.var(self.y_pred_list, axis=0))
 
         self.var = np.mean(var_arr)
         self.bias = np.mean(bias_arr)
@@ -308,6 +315,10 @@ class kkFoldCrossValidation(__CV_core):
         beta_coefs = np.asarray(beta_coefs)
         self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
         self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
+
+        self.x_pred_test = np.array(x_pred_test)
+        self.y_pred = np.array(y_pred_mean_list)
+        self.y_pred_var = np.array(y_pred_var_list)
 
 
 class MCCrossValidation(__CV_core):
@@ -404,7 +415,7 @@ class MCCrossValidation(__CV_core):
         self.bias = np.mean(_bias**2)
 
         # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
-        _R2 = metrics.R2(self.y_pred_list, y_holdout_test, axis=1)
+        _R2 = metrics.R2(y_holdout_test, self.y_pred_list, axis=1)
         self.R2 = np.mean(_R2)
 
         # Variance, var(y_predictions)
@@ -414,15 +425,20 @@ class MCCrossValidation(__CV_core):
         self.beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
         self.beta_coefs = np.asarray(beta_coefs).mean(axis=0)
 
+        self.x_pred_test = x_holdout_test
+        self.y_pred = np.mean(self.y_pred_list, axis=0)
+        self.y_pred_var = np.var(self.y_pred_list, axis=0)
+
+
 def __test_cross_validation_methods():
     # A small implementation of a test case
     from regression import LinearRegression
     import matplotlib.pyplot as plt
 
     # Initial values
-    n = 1000
-    N_bs = 200
-    k_fold_size = 0.25
+    n = 100
+    N_bs = 1000
+    k_fold_size = 0.2
     holdout_percent = 0.2
     noise = 0.3
     np.random.seed(1234)
@@ -430,13 +446,13 @@ def __test_cross_validation_methods():
     # Sets up random matrices
     x = np.random.rand(n, 1)
 
-    def func_excact(_x): return -2*_x*_x + noise * \
+    def func_excact(_x): return 2*_x*_x + np.exp(-2*_x) + noise * \
         np.random.randn(_x.shape[0], _x.shape[1])
 
     y = func_excact(x)
 
     def design_matrix(_x):
-        return np.c_[np.ones(_x.shape), _x, _x*_x, _x*_x*_x]
+        return np.c_[np.ones(_x.shape), _x, _x*_x]
 
     # Sets up design matrix
     X = design_matrix(x)
@@ -447,22 +463,34 @@ def __test_cross_validation_methods():
     y = y.ravel()
     y_predict = reg.predict(X).ravel()
     print("Regular linear regression")
-    print("R2:    {:-20.16f}".format(reg.score(y_predict, y)))
+    print("R2:    {:-20.16f}".format(reg.score(y, y_predict)))
     print("MSE:   {:-20.16f}".format(metrics.mse(y, y_predict)))
     # print (metrics.bias(y, y_predict))
     print("Bias^2:{:-20.16f}".format(metrics.bias2(y, y_predict)))
 
+    # Small plotter
+    import matplotlib.pyplot as plt
+    plt.plot(x, y, "o", label="data")
+    plt.plot(x, y_predict, "o", 
+        label=r"Pred, $R^2={:.4f}$".format(reg.score(y, y_predict)))
+
     print("k-fold Cross Validation")
-    cv = kFoldCrossValidation(x, y, LinearRegression, design_matrix)
-    cv.cross_validate(k_percent=k_fold_size, holdout_percent=holdout_percent)
-    print("R2:    {:-20.16f}".format(cv.R2))
-    print("MSE:   {:-20.16f}".format(cv.MSE))
-    print("Bias^2:{:-20.16f}".format(cv.bias))
-    print("Var(y):{:-20.16f}".format(cv.var))
+    kfcv = kFoldCrossValidation(x, y, LinearRegression, design_matrix)
+    kfcv.cross_validate(k_percent=k_fold_size, 
+        holdout_percent=holdout_percent)
+    print("R2:    {:-20.16f}".format(kfcv.R2))
+    print("MSE:   {:-20.16f}".format(kfcv.MSE))
+    print("Bias^2:{:-20.16f}".format(kfcv.bias))
+    print("Var(y):{:-20.16f}".format(kfcv.var))
     print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(cv.MSE, cv.bias, cv.var,
-                                     cv.bias + cv.var))
-    print("Diff: {}".format(abs(cv.bias + cv.var - cv.MSE)))
+    print("{} = {} + {} = {}".format(kfcv.MSE, kfcv.bias, kfcv.var,
+                                     kfcv.bias + kfcv.var))
+    print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
+    
+    plt.errorbar(kfcv.x_pred_test, kfcv.y_pred, 
+        yerr=np.sqrt(kfcv.y_pred_var), fmt="o", 
+        label=r"k-fold CV, $R^2={:.4f}$".format(kfcv.R2))
+
 
     print("kk Cross Validation")
     kkcv = kkFoldCrossValidation(x, y, LinearRegression, design_matrix)
@@ -476,6 +504,11 @@ def __test_cross_validation_methods():
     print("{} = {} + {} = {}".format(kkcv.MSE, kkcv.bias, kkcv.var,
                                      kkcv.bias + kkcv.var))
     print("Diff: {}".format(abs(kkcv.bias + kkcv.var - kkcv.MSE)))
+
+    plt.errorbar(kkcv.x_pred_test.ravel(), kkcv.y_pred.ravel(), 
+        yerr=np.sqrt(kkcv.y_pred_var.ravel()), fmt="o", 
+        label=r"kk-fold CV, $R^2={:.4f}$".format(kkcv.R2))
+
 
     print("Monte Carlo Cross Validation")
     mccv = MCCrossValidation(x, y, LinearRegression, design_matrix)
@@ -491,6 +524,18 @@ def __test_cross_validation_methods():
     print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
     print("\nCross Validation methods tested.")
+
+    plt.errorbar(mccv.x_pred_test, mccv.y_pred, 
+        yerr=np.sqrt(mccv.y_pred_var), fmt="o", 
+        label=r"MC CV, $R^2={:.4f}$".format(mccv.R2))
+
+
+
+    plt.xlabel(r"$x$")
+    plt.ylabel(r"$y$")
+    plt.title(r"$y=2x^2$")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == '__main__':

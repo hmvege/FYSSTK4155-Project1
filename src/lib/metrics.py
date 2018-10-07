@@ -42,9 +42,10 @@ def R2(y_excact, y_predict, axis=0):
         float: R^2 score
     """
 
-    assert y_excact.shape == y_excact.shape
-    return 1.0 - np.sum((y_excact - y_predict)**2, axis=axis) / \
-        np.sum((y_excact - np.mean(y_excact, axis=axis, keepdims=True))**2, axis=axis)
+
+    mse_excact_pred = np.sum((y_excact - y_predict)**2, axis=axis)
+    variance_excact = np.sum((y_excact - np.mean(y_excact))**2)
+    return 1.0 - mse_excact_pred/variance_excact
 
 
 def bias2(y_excact, y_predict, axis=0):
@@ -59,6 +60,16 @@ def bias2(y_excact, y_predict, axis=0):
         float: Bias^2
     """
     return np.mean((y_predict - np.mean(y_excact, keepdims=True, axis=axis))**2)
+
+
+def ridge_regression_variance(X, sigma2, lmb):
+    """Analytical variance for beta coefs in Ridge regression,
+    from section 1.4.2, page 10, https://arxiv.org/pdf/1509.09169.pdf"""
+    XT_X = X.T @ X
+    W_lmb = XT_X + lmb * np.eye(XT_X.shape[0])
+    W_lmb_inv = np.linalg.inv(W_lmb)
+    return np.diag(sigma2 * W_lmb_inv @ XT_X @ W_lmb_inv.T)
+
 
 
 def timing_function(func):
