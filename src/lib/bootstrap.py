@@ -5,6 +5,7 @@ try:
 except ModuleNotFoundError:
     import metrics
 from tqdm import tqdm
+import sklearn.model_selection as sk_modsel
 
 
 def boot(*data):
@@ -128,10 +129,8 @@ class BootstrapRegression:
 
         N = len(self.x_data)
 
-        # Splits into k intervals
-        test_size = np.floor(N * test_percent)
-        k = int(N / test_size)
-        test_size = int(test_size)
+        # Splits into test and train set.
+        test_size = int(np.floor(N * test_percent))
 
         x = self.x_data
         y = self.y_data
@@ -139,6 +138,13 @@ class BootstrapRegression:
         # Splits into training and test set.
         x_test, x_train = np.split(x, [test_size], axis=0)
         y_test, y_train = np.split(y, [test_size], axis=0)
+
+        # Splits X data and design matrix data
+        x_train, x_test, y_train, y_test = \
+            sk_modsel.train_test_split(self.x_data, self.y_data,
+                                       test_size=test_percent)
+        test_size = x_test.shape[0]
+
 
         # Sets up emtpy lists for gathering the relevant scores in
         R2_list = np.empty(N_bs)

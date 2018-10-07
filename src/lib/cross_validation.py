@@ -5,6 +5,7 @@ try:
 except ModuleNotFoundError:
     import metrics
 from tqdm import tqdm
+import sklearn.model_selection as sk_modsel
 
 __all__ = ["kFoldCrossValidation", "MCCrossValidation"]
 
@@ -30,38 +31,6 @@ class __CV_core:
         self.y_data = y_data
         self._reg = reg()
         self._design_matrix = design_matrix_func
-
-    def _get_split_percent(self, split_percentage, N,
-                           enforce_equal_intervals=True):
-        """Parent method for getting interval split size.
-
-        Args:
-            split_percentage (float): percentage we split interval into. Goes
-                from 0 to 1.
-            N (int): total dataset size.
-            enforce_equal_intervals (bool): if true, will add remainder 
-                of N % test_size to test_size. Default is True.
-
-        Returns:
-            k_splits (int): number of split intervals
-            test_size (int): size of test size(Size of 1 interval)
-        """
-
-        assert split_percentage < 1.0, "percent must be less than one."
-
-        # Splits into k intervals
-        test_size = np.floor(N * split_percentage)
-        k_splits = int(N / test_size)
-        test_size = int(test_size)
-
-        if enforce_equal_intervals:
-            if N % test_size != 0:
-                raise ValueError("bad percent: N % k = {} != 0".format(
-                    N % test_size))
-        else:
-            test_size += N % test_size
-
-        return k_splits, test_size
 
     @property
     def design_matrix(self):
@@ -89,7 +58,7 @@ class __CV_core:
     @coef_.getter
     def coef_(self):
         return self.beta_coefs
-    
+
     @property
     def coef_var(self):
         return self.beta_coefs_var
@@ -102,33 +71,47 @@ class __CV_core:
 class kFoldCrossValidation(__CV_core):
     """Class for performing k-fold cross validation."""
 
-    def cross_validate(self, k_percent=0.2, holdout_percent=0.2):
+    def cross_validate(self, k_splits=5, test_percent=0.2):
         """
         Args:
-            k_percent (float): percentage of the data which is to be used
+            k_splits (float): percentage of the data which is to be used
                 for cross validation. Default is 0.2
         """
 
-        N_total_size = len(self.x_data)
+        N_total_size = self.x_data.shape[0]
 
         # Splits dataset into a holdout test chuck to find bias, variance ect
         # on and one to perform k-fold CV on.
-        k_holdout, holdout_test_size = self._get_split_percent(
-            holdout_percent, N_total_size, enforce_equal_intervals=False)
+        holdout_test_size = int(np.floor(N_total_size * test_percent))
+        
+        # Shuffles
+        np.random.shuffle(self.x_data)
+        np.random.shuffle(self.y_data)
 
-        # Splits X data and design matrix data
-        x_holdout_test, x_kfold_train = np.split(self.x_data,
-                                                 [holdout_test_size], axis=0)
-        y_holdout_test, y_kfold_train = np.split(self.y_data,
-                                                 [holdout_test_size], axis=0)
+        # Manual splitting
+        x_holdout_test = self.x_data[:holdout_test_size,:]
+        x_kfold_train = self.x_data[holdout_test_size:,:]
+        y_holdout_test = self.y_data[:holdout_test_size]
+        y_kfold_train = self.y_data[holdout_test_size:]
 
-        N_kfold_data = len(x_kfold_train)
+        np.random.shuffle(x_holdout_test)
+        np.random.shuffle(y_holdout_test)
+        np.random.shuffle(x_kfold_train)
+        np.random.shuffle(y_kfold_train)
+
+        # # print (x_kfold_train[:5])
+        # x_kfold_train, x_holdout_test, y_kfold_train, y_holdout_test = \
+        #     sk_modsel.train_test_split(self.x_data, self.y_data,
+        #                                test_size=test_percent)
+        # holdout_test_size = y_holdout_test.shape[0]
+
+        N_kfold_data = len(y_kfold_train)
 
         # Sets up the holdout design matrix
         X_holdout_test = self._design_matrix(x_holdout_test)
 
         # Splits dataset into managable k fold tests
-        k_splits, test_size = self._get_split_percent(k_percent, N_kfold_data)
+        test_size = int(np.floor(N_kfold_data / k_splits))
 
         # Splits kfold train data into k actual folds
         x_subdata = np.array_split(x_kfold_train, k_splits, axis=0)
@@ -192,10 +175,10 @@ class kFoldCrossValidation(__CV_core):
 class kkFoldCrossValidation(__CV_core):
     """A nested k fold CV for getting bias."""
 
-    def cross_validate(self, k_percent=0.2, holdout_percent=0.2):
+    def cross_validate(self, k_splits=4, kk_splits=4, test_percent=0.2):
         """
         Args:
-            k_percent (float): percentage of the data which is to be used
+            k_splits (float): percentage of the data which is to be used
                 for cross validation. Default is 0.2
         """
         # raise NotImplementedError("Not implemnted kk fold CV")
@@ -204,26 +187,24 @@ class kkFoldCrossValidation(__CV_core):
 
         # Splits dataset into a holdout test chuck to find bias, variance ect
         # on and one to perform k-fold CV on.
-        k_holdout, holdout_test_size = self._get_split_percent(
-            holdout_percent, N_total_size, enforce_equal_intervals=False)
+        holdout_test_size = int(np.floor(N_total_size/k_splits))
 
-        # Splits X data and design matrix data
-        x_holdout_data = np.split(self.x_data, k_holdout, axis=0)
-        y_holdout_data = np.split(self.y_data, k_holdout, axis=0)
+        x_holdout_data = np.split(self.x_data, k_splits, axis=0)
+        y_holdout_data = np.split(self.y_data, k_splits, axis=0)
 
         # Sets up some arrays for storing the different MSE, bias, var, R^2
         # scores.
-        MSE_arr = np.empty(k_holdout)
-        R2_arr = np.empty(k_holdout)
-        var_arr = np.empty(k_holdout)
-        bias_arr = np.empty(k_holdout)
+        MSE_arr = np.empty(k_splits)
+        R2_arr = np.empty(k_splits)
+        var_arr = np.empty(k_splits)
+        bias_arr = np.empty(k_splits)
 
         beta_coefs = []
         x_pred_test = []
         y_pred_mean_list = []
         y_pred_var_list = []
 
-        for i_holdout in tqdm(range(k_holdout),
+        for i_holdout in tqdm(range(k_splits),
                               desc="Nested k fold Cross Validation"):
 
             # Gets the testing holdout data to be used. Makes sure to use
@@ -232,7 +213,7 @@ class kkFoldCrossValidation(__CV_core):
             y_holdout_test = y_holdout_data[i_holdout]
 
             # Sets up indexes
-            holdout_set_list = list(range(k_holdout))
+            holdout_set_list = list(range(k_splits))
             holdout_set_list.pop(i_holdout)
 
             # Sets up new holdout data sets
@@ -246,20 +227,19 @@ class kkFoldCrossValidation(__CV_core):
 
             # Splits dataset into managable k fold tests
             N_holdout_data = len(x_holdout_train)
-            k_splits, test_size = self._get_split_percent(
-                k_percent, N_holdout_data)
+            test_size = int(np.floor(N_holdout_data/kk_splits))
 
             # Splits kfold train data into k actual folds
-            x_subdata = np.array_split(x_holdout_train, k_splits, axis=0)
-            y_subdata = np.array_split(y_holdout_train, k_splits, axis=0)
+            x_subdata = np.array_split(x_holdout_train, kk_splits, axis=0)
+            y_subdata = np.array_split(y_holdout_train, kk_splits, axis=0)
 
             # Stores the test values from each k trained data set in an array
-            R2_list = np.empty(k_splits)
+            R2_list = np.empty(kk_splits)
 
-            self.y_pred_list = np.empty((k_splits, holdout_test_size))
-            # self.y_test_list = np.empty((k_splits, holdout_test_size))
+            self.y_pred_list = np.empty((kk_splits, holdout_test_size))
+            # self.y_test_list = np.empty((kk_splits, holdout_test_size))
 
-            for ik in range(k_splits):
+            for ik in range(kk_splits):
                 # Gets the testing data
                 k_x_test = x_subdata[ik]
                 k_y_test = y_subdata[ik]
@@ -267,7 +247,7 @@ class kkFoldCrossValidation(__CV_core):
                 X_test = self._design_matrix(k_x_test)
 
                 # Sets up indexes
-                set_list = list(range(k_splits))
+                set_list = list(range(kk_splits))
                 set_list.pop(ik)
 
                 # Sets up new data set
@@ -326,11 +306,11 @@ class MCCrossValidation(__CV_core):
     https://stats.stackexchange.com/questions/51416/k-fold-vs-monte-carlo-cross-validation
     """
 
-    def cross_validate(self, N_mc_crossvalidations, k_percent=0.2,
-                       holdout_percent=0.2):
+    def cross_validate(self, N_mc_crossvalidations, k_splits=4,
+                       test_percent=0.2):
         """
         Args:
-            k_percent (float): percentage of the data which is to be used
+            k_splits (float): percentage of the data which is to be used
                 for cross validation. Default is 0.2
         """
         # raise NotImplementedError("Not implemnted MC CV")
@@ -339,14 +319,21 @@ class MCCrossValidation(__CV_core):
 
         # Splits dataset into a holdout test chuck to find bias, variance ect
         # on and one to perform k-fold CV on.
-        k_holdout, holdout_test_size = self._get_split_percent(
-            holdout_percent, N_total_size, enforce_equal_intervals=False)
+        # k_holdout, holdout_test_size = self._get_split_percent(
+        #     test_percent, N_total_size, enforce_equal_intervals=False)
+
+        # # Splits X data and design matrix data
+        # x_holdout_test, x_mc_train = np.split(self.x_data,
+        #                                       [holdout_test_size], axis=0)
+        # y_holdout_test, y_mc_train = np.split(self.y_data,
+        #                                       [holdout_test_size], axis=0)
 
         # Splits X data and design matrix data
-        x_holdout_test, x_mc_train = np.split(self.x_data,
-                                              [holdout_test_size], axis=0)
-        y_holdout_test, y_mc_train = np.split(self.y_data,
-                                              [holdout_test_size], axis=0)
+        x_mc_train, x_holdout_test, y_mc_train, y_holdout_test = \
+            sk_modsel.train_test_split(self.x_data, self.y_data,
+                                       test_size=test_percent)
+        holdout_test_size = y_holdout_test.shape[0]
+
 
         N_mc_data = len(x_mc_train)
 
@@ -354,8 +341,7 @@ class MCCrossValidation(__CV_core):
         X_holdout_test = self._design_matrix(x_holdout_test)
 
         # Splits dataset into managable k fold tests
-        _, mc_test_size = self._get_split_percent(
-            k_percent, N_mc_data)
+        mc_test_size = int(np.floor(N_mc_data / k_splits))
 
         # Splits kfold train data into k actual folds
         # x_subdata = np.array_split(x_kfold_train, k_splits, axis=0)
@@ -393,7 +379,6 @@ class MCCrossValidation(__CV_core):
 
             # Sets up function to predict
             X_train = self._design_matrix(k_x_train)
-
 
             # Trains method bu fitting data
             self.reg.fit(X_train, k_y_train)
@@ -438,8 +423,8 @@ def __test_cross_validation_methods():
     # Initial values
     n = 100
     N_bs = 1000
-    k_fold_size = 0.2
-    holdout_percent = 0.2
+    k_splits = 4
+    test_percent = 0.2
     noise = 0.3
     np.random.seed(1234)
 
@@ -471,13 +456,13 @@ def __test_cross_validation_methods():
     # Small plotter
     import matplotlib.pyplot as plt
     plt.plot(x, y, "o", label="data")
-    plt.plot(x, y_predict, "o", 
-        label=r"Pred, $R^2={:.4f}$".format(reg.score(y, y_predict)))
+    plt.plot(x, y_predict, "o",
+             label=r"Pred, $R^2={:.4f}$".format(reg.score(y, y_predict)))
 
     print("k-fold Cross Validation")
     kfcv = kFoldCrossValidation(x, y, LinearRegression, design_matrix)
-    kfcv.cross_validate(k_percent=k_fold_size, 
-        holdout_percent=holdout_percent)
+    kfcv.cross_validate(k_splits=k_fold_size,
+                        test_percent=test_percent)
     print("R2:    {:-20.16f}".format(kfcv.R2))
     print("MSE:   {:-20.16f}".format(kfcv.MSE))
     print("Bias^2:{:-20.16f}".format(kfcv.bias))
@@ -486,16 +471,15 @@ def __test_cross_validation_methods():
     print("{} = {} + {} = {}".format(kfcv.MSE, kfcv.bias, kfcv.var,
                                      kfcv.bias + kfcv.var))
     print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
-    
-    plt.errorbar(kfcv.x_pred_test, kfcv.y_pred, 
-        yerr=np.sqrt(kfcv.y_pred_var), fmt="o", 
-        label=r"k-fold CV, $R^2={:.4f}$".format(kfcv.R2))
 
+    plt.errorbar(kfcv.x_pred_test, kfcv.y_pred,
+                 yerr=np.sqrt(kfcv.y_pred_var), fmt="o",
+                 label=r"k-fold CV, $R^2={:.4f}$".format(kfcv.R2))
 
     print("kk Cross Validation")
     kkcv = kkFoldCrossValidation(x, y, LinearRegression, design_matrix)
-    kkcv.cross_validate(k_percent=k_fold_size,
-                        holdout_percent=holdout_percent)
+    kkcv.cross_validate(k_splits=k_fold_size,
+                        test_percent=test_percent)
     print("R2:    {:-20.16f}".format(kkcv.R2))
     print("MSE:   {:-20.16f}".format(kkcv.MSE))
     print("Bias^2:{:-20.16f}".format(kkcv.bias))
@@ -505,15 +489,14 @@ def __test_cross_validation_methods():
                                      kkcv.bias + kkcv.var))
     print("Diff: {}".format(abs(kkcv.bias + kkcv.var - kkcv.MSE)))
 
-    plt.errorbar(kkcv.x_pred_test.ravel(), kkcv.y_pred.ravel(), 
-        yerr=np.sqrt(kkcv.y_pred_var.ravel()), fmt="o", 
-        label=r"kk-fold CV, $R^2={:.4f}$".format(kkcv.R2))
-
+    plt.errorbar(kkcv.x_pred_test.ravel(), kkcv.y_pred.ravel(),
+                 yerr=np.sqrt(kkcv.y_pred_var.ravel()), fmt="o",
+                 label=r"kk-fold CV, $R^2={:.4f}$".format(kkcv.R2))
 
     print("Monte Carlo Cross Validation")
     mccv = MCCrossValidation(x, y, LinearRegression, design_matrix)
-    mccv.cross_validate(N_bs, k_percent=k_fold_size,
-                        holdout_percent=holdout_percent)
+    mccv.cross_validate(N_bs, k_splits=k_fold_size,
+                        test_percent=test_percent)
     print("R2:    {:-20.16f}".format(mccv.R2))
     print("MSE:   {:-20.16f}".format(mccv.MSE))
     print("Bias^2:{:-20.16f}".format(mccv.bias))
@@ -525,11 +508,9 @@ def __test_cross_validation_methods():
 
     print("\nCross Validation methods tested.")
 
-    plt.errorbar(mccv.x_pred_test, mccv.y_pred, 
-        yerr=np.sqrt(mccv.y_pred_var), fmt="o", 
-        label=r"MC CV, $R^2={:.4f}$".format(mccv.R2))
-
-
+    plt.errorbar(mccv.x_pred_test, mccv.y_pred,
+                 yerr=np.sqrt(mccv.y_pred_var), fmt="o",
+                 label=r"MC CV, $R^2={:.4f}$".format(mccv.R2))
 
     plt.xlabel(r"$x$")
     plt.ylabel(r"$y$")
