@@ -26,7 +26,7 @@ def mse(y_excact, y_predict, axis=0):
     return np.mean((y_excact - y_predict)**2, axis=axis)
 
 
-def R2(y_excact, y_predict, axis=0):
+def R2(y_excact, y_predict, axis=None):
     """R^2 score
 
     Uses numpy to calculate the R^2 score.

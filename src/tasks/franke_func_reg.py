@@ -21,60 +21,13 @@ import sklearn.model_selection as sk_modsel
 import sklearn.preprocessing as sk_preproc
 import sklearn.linear_model as sk_model
 import sklearn.metrics as sk_metrics
+import sklearn.utils as sk_utils
 # import sklearn.svm as
 
-# from matplotlib import rc, rcParams
-# rc("text", usetex=True)
-# rc("font", **{"family": "sans-serif", "serif": ["Computer Modern"]})
-# rcParams["font.family"] += ["serif"]
-
-
-def poly5setup(x, y, N):
-    """Polynom of degree 5 of x and y."""
-    # Degree 0
-    assert len(x) == len(y)
-    deg0 = np.ones((N, 1))
-    # deg0 = np.ones((N**2, 1))
-
-    # Degree 1
-    deg1 = x + y
-
-    # Degree 2
-    _x2 = x*x
-    _y2 = y*y
-    deg2 = _x2 + 2*x*y + _y2
-    # deg2 = _x2 + x*y + _y2
-
-    # Degree 3
-    _x3 = _x2*x
-    _y3 = _y2*y
-    _y2x = _y2*x
-    _x2y = _x2*y
-    deg3 = _x3 + 3*_x2y + 3*_y2x + _y3
-    # deg3 = _x3 + _x2y + _y2x + _y3
-
-    # Degree 4
-    _x4 = _x3*x
-    _y4 = _y3*y
-    _y3x = _y3*x
-    _x3y = _x3*y
-    deg4 = _x4 + 4*_x3y + 6*_x2*_y2 + 4*_y3x + _y4
-    # deg4 = _x4 + _x3y + _x2y2 + _y3x + _y4
-
-    # Degree 5
-    _x5 = _x4*x
-    _y5 = _y4*y
-    _x4y = _x4*y
-    _y4x = _y4*x
-    deg5 = _x5 + 5*_x4y + 10*_x3*_y2 + 10*_x2*_y3 + 5*_y4x + _y5
-    # deg5 = _x5 + _x4y + _x3*_y2 + _x2*_y3 + _y4x + _y5
-
-    # return np.hstack([deg0, x, y])
-    # return np.hstack([deg0, x, y, _x2, x*y, _y2])
-    return np.hstack([deg0, x, y, _x2, x*y, _y2, _x3, _x2y,
-                      _y2x, _y3, _x4, _x3y, _x2*_y2, _y3x, _y4, _x5, _x4y,
-                      _x3*_y2, _x2*_y3, _y4x, _y5])
-    # return np.hstack([deg0, deg1, deg2, deg3, deg4, deg5])
+from matplotlib import rc, rcParams
+rc("text", usetex=True)
+rc("font", **{"family": "sans-serif", "serif": ["Computer Modern"]})
+rcParams["font.family"] += ["serif"]
 
 
 def plot_simple_surface(x, y, z, filename="../../fig/simple_surface"):
@@ -129,12 +82,11 @@ def FrankeFunction(x, y):
 
 def franke_func_tasks():
     # Generate data
-    N = 1000
-    N_bs_resampling = 100
+    N = 100
+    N_bs_resampling = 1000
     N_cv_bs = 100
-    test_percent = 0.4
     k_fold_size = 0.25
-    holdout_percent = 0.2
+    test_percent = 0.4
 
     noise_sigma = 0.1
     noise_mu = 0
@@ -142,6 +94,15 @@ def franke_func_tasks():
     alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]
 
     np.random.seed(1234)
+
+    regression_methods = []
+    regression_methods += ["ols"]
+    # regression_methods += ["ridge"]
+    # regression_methods += ["lasso"]
+
+    regression_implementation = []
+    regression_implementation += ["sklearn"]
+    # regression_implementation += ["manual"]
 
     # Sets up training data
     x = np.sort(np.random.uniform(0, 1, N))
@@ -155,31 +116,54 @@ def franke_func_tasks():
 
     np.save("surface_plotter/data", np.c_[x, y, z])
 
-    # task_a(x, y, z, deg=degree, N_bs=N_bs_resampling,
-    #        N_cv_bs=N_cv_bs, test_percent=test_percent,
-    #        holdout_percent=holdout_percent)
+    if "ols" in regression_methods:
+        print("\nOrdinarty Linear Regression")
+        for degree in polynom_degrees:
+            print("\n**** Polynom degree: {} ****".format(degree))
 
-    task_b(x, y, z, polynom_degrees=polynom_degrees,
-           alpha_values=alpha_values, N_bs=N_bs_resampling, N_cv_bs=N_cv_bs,
-           test_percent=test_percent, holdout_percent=holdout_percent)
+            if "manual" in regression_implementation:
+                task_a_manual(x, y, z, deg=degree, N_bs=N_bs_resampling,
+                              N_cv_bs=N_cv_bs,
+                              test_percent=test_percent)
+
+            if "sklearn" in regression_implementation:
+                task_a_sk_learn(x, y, z, deg=degree, N_bs=N_bs_resampling,
+                                N_cv_bs=N_cv_bs,
+                                test_percent=test_percent)
+
+    if "ridge" in regression_methods:
+        print("\nRidge Regression")
+        for deg in polynom_degrees:
+            print("\n**** Polynom degree: {} ****".format(deg))
+            for alpha in alpha_values:
+                print("\n**** Ridge Lambda: {:-e} ****".format(alpha))
+
+                if "manual" in regression_implementation:
+                    task_b_manual(x, y, z, alpha, deg=deg,
+                                  test_percent=test_percent)
+
+                if "sklearn" in regression_implementation:
+                    task_b_sk_learn(x, y, z, alpha, deg=deg,
+                                    test_percent=test_percent)
+
+    if "lasso" in regression_methods:
+        print("\nLasso Regression")
+        for deg in polynom_degrees:
+            print("\n**** Polynom degree: {} ****".format(deg))
+            for alpha in alpha_values:
+                print("\n**** Lasso Lambda: {:-e} ****".format(alpha))
+
+                # if "manual" in regression_implementation:
+                #     task_c_manual(x, y, z, alpha, deg=deg,
+                #                   test_percent=test_percent)
+
+                if "sklearn" in regression_implementation:
+                    task_c_sk_learn(x, y, z, alpha, deg=deg,
+                                    test_percent=test_percent)
 
 
-def task_a(x, y, z, polynom_degrees=[1], N_bs=100, N_cv_bs=100,
-           test_percent=0.4, k_fold_size=0.2, holdout_percent=0.4):
-
-    for degree in polynom_degrees:
-
-        # task_a_manual(x, y, z, deg=degree, N_bs=N_bs_resampling,
-        #               N_cv_bs=N_cv_bs, test_percent=test_percent,
-        #               holdout_percent=holdout_percent)
-
-        task_a_sk_learn(x, y, z, deg=degree, N_bs=N_bs_resampling,
-                        N_cv_bs=N_cv_bs, test_percent=test_percent,
-                        holdout_percent=holdout_percent)
-
-
-def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, test_percent=0.4,
-                  k_fold_size=0.2, holdout_percent=0.4):
+def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, k_fold_size=0.2,
+                  test_percent=0.4):
     """Manual implementation of the OLS."""
 
     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
@@ -188,7 +172,6 @@ def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, test_percent=0.4,
     linreg = reg.LinearRegression()
     linreg.fit(X, z.ravel())
     z_predict = linreg.predict(X).ravel()
-    print("Regular linear regression")
     print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict)))
     print("MSE: {:-20.16f}".format(metrics.mse(z.ravel(), z_predict)))
     print("Bias: {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
@@ -200,7 +183,8 @@ def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, test_percent=0.4,
     kfcv = cv.kFoldCrossValidation(
         np.c_[x.ravel(), y.ravel()], z.ravel(),
         reg.LinearRegression, poly.transform)
-    kfcv.cross_validate(k_percent=k_fold_size, holdout_percent=holdout_percent)
+    kfcv.cross_validate(k_percent=k_fold_size,
+                        test_percent=test_percent)
     print("R2:    {:-20.16f}".format(kfcv.R2))
     print("MSE:   {:-20.16f}".format(kfcv.MSE))
     print("Bias^2:{:-20.16f}".format(kfcv.bias))
@@ -210,68 +194,13 @@ def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, test_percent=0.4,
                                      kfcv.bias + kfcv.var))
     print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
 
-    # SK Learn
-    print("SciKit-Learn k-fold Cross Validation")
-    X_train, X_test, y_train, y_test = sk_modsel.train_test_split(
-        np.c_[x.ravel(), y.ravel()], z.ravel(),
-        test_size=holdout_percent, random_state=0)
-    kf = sk_modsel.KFold(n_splits=4)
-
-    y_pred_list = []
-
-    for train_index, test_index in kf.split(X_train):
-        kX_train, kX_test = X_train[train_index], X_train[test_index]
-        kY_train, kY_test = y_train[train_index], y_train[test_index]
-        kf_linreg = reg.LinearRegression()
-        kf_linreg.fit(kX_train, kY_train)
-        y_pred_list.append(kf_linreg.predict(X_test))
-        print(kf_linreg.score(kf_linreg.predict(X_test), y_test))
-
-    y_pred_list = np.asarray(y_pred_list)
-
-    # Mean Square Error, mean((y - y_approx)**2)
-    _mse = (y_test - y_pred_list)**2
-    MSE = np.mean(np.mean(_mse, axis=0, keepdims=True))
-
-    # Bias, (y - mean(y_approx))^2
-    _mean_pred = np.mean(y_pred_list, axis=0, keepdims=True)
-    bias = np.mean((y_test - _mean_pred)**2)
-
-    # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
-    R2 = np.mean(metrics.R2(y_test, y_pred_list, axis=1))
-
-    # Variance, var(y_predictions)
-    var = np.mean(np.var(y_pred_list, axis=0, keepdims=True))
-
-    print("R2:    {:-20.16f}".format(R2))
-    print("MSE:   {:-20.16f}".format(MSE))
-    print("Bias^2:{:-20.16f}".format(bias))
-    print("Var(y):{:-20.16f}".format(var))
-    print(abs(MSE - bias - var))
-
-    # # Resampling with kk-fold cross validation
-    # print("kk Cross Validation")
-    # kkcv = cv.kkFoldCrossValidation(
-    #     np.c_[x.ravel(), y.ravel()], z.ravel(),
-    #     reg.LinearRegression, poly.transform)
-    # kkcv.cross_validate(k_percent=k_fold_size,
-    #                     holdout_percent=holdout_percent)
-    # print("R2:    {:-20.16f}".format(kkcv.R2))
-    # print("MSE:   {:-20.16f}".format(kkcv.MSE))
-    # print("Bias^2:{:-20.16f}".format(kkcv.bias))
-    # print("Var(y):{:-20.16f}".format(kkcv.var))
-    # print("MSE = Bias^2 + Var(y) = ")
-    # print("{} = {} + {} = {}".format(kkcv.MSE, kkcv.bias, kkcv.var,
-    #                                  kkcv.bias + kkcv.var))
-    # print("Diff: {}".format(abs(kkcv.bias + kkcv.var - kkcv.MSE)))
-
     # Resampling with mc cross validation
     print("Monte Carlo Cross Validation")
     mccv = cv.MCCrossValidation(
         np.c_[x.ravel(), y.ravel()], z.ravel(),
         reg.LinearRegression, poly.transform)
     mccv.cross_validate(N_cv_bs, k_percent=k_fold_size,
-                        holdout_percent=holdout_percent)
+                        test_percent=test_percent)
     print("R2:    {:-20.16f}".format(mccv.R2))
     print("MSE:   {:-20.16f}".format(mccv.MSE))
     print("Bias^2:{:-20.16f}".format(mccv.bias))
@@ -282,7 +211,7 @@ def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, test_percent=0.4,
     print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
     # Resampling with bootstrapping
-    print("\nBootstrapping")
+    print("Bootstrapping")
 
     bs_reg = bs.BootstrapRegression(
         np.c_[x.ravel(), y.ravel()], z.ravel(),
@@ -301,11 +230,12 @@ def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, test_percent=0.4,
     # plot_simple_surface(x, y, z, filename="../../fig/frankie_surface")
 
 
-def sk_learn_k_fold_cv(x, y, z, holdout_percent=0.4):
+def sk_learn_k_fold_cv(x, y, z, reg_method, test_percent=0.4,
+                       reg_kwargs={"fit_intercept": False}):
     """Scikit Learn method for cross validation."""
     X_train, X_test, y_train, y_test = sk_modsel.train_test_split(
         np.c_[x.ravel(), y.ravel()], z.ravel(),
-        test_size=holdout_percent)
+        test_size=test_percent)
     kf = sk_modsel.KFold(n_splits=4)
 
     y_pred_list = []
@@ -313,9 +243,14 @@ def sk_learn_k_fold_cv(x, y, z, holdout_percent=0.4):
     for train_index, test_index in kf.split(X_train):
         kX_train, kX_test = X_train[train_index], X_train[test_index]
         kY_train, kY_test = y_train[train_index], y_train[test_index]
-        kf_linreg = reg.LinearRegression()
-        kf_linreg.fit(kX_train, kY_train)
-        y_pred_list.append(kf_linreg.predict(X_test))
+
+        kf_reg = reg_method(**reg_kwargs)
+        # linreg.fit(X, z.ravel())
+        # z_predict = linreg.predict(X)
+
+        # kf_reg = reg.LinearRegression()
+        kf_reg.fit(kX_train, kY_train)
+        y_pred_list.append(kf_reg.predict(X_test))
 
     y_pred_list = np.asarray(y_pred_list)
 
@@ -333,102 +268,131 @@ def sk_learn_k_fold_cv(x, y, z, holdout_percent=0.4):
     # Variance, var(y_predictions)
     var = np.mean(np.var(y_pred_list, axis=0, keepdims=True))
 
+    print("SciKit-Learn k-fold Cross Validation")
     print("R2:    {:-20.16f}".format(R2))
     print("MSE:   {:-20.16f}".format(MSE))
     print("Bias^2:{:-20.16f}".format(bias))
     print("Var(y):{:-20.16f}".format(var))
-    print(abs(MSE - bias - var))
+    print("abs(MSE - bias - var(y_approx)) = ", abs(MSE - bias - var))
 
 
-def task_a_sk_learn(x, y, z, deg=1, N_bs=100, N_cv_bs=100, test_percent=0.4,
-                    k_fold_size=0.2, holdout_percent=0.4):
+def sk_learn_bootstrap(x, y, z, reg_method, N_bs=100,
+                       test_percent=0.4,
+                       reg_kwargs={"fit_intercept": False}):
+    """Sci-kit learn bootstrap method."""
+
+    X_train, X_test, y_train, y_test = sk_modsel.train_test_split(
+        np.c_[x.ravel(), y.ravel()], z.ravel(),
+        test_size=test_percent)
+
+    # Ensures we are on axis shape (N_observations, N_predictors)
+    y_test = y_test.reshape(-1, 1)
+    y_train = y_train.reshape(-1, 1)
+
+    y_pred = np.empty((y_test.shape[0], N_bs))
+
+    # Initializes regression method
+    kf_reg = reg_method(**reg_kwargs)
+
+    R2_ = np.empty(N_bs)
+    mse_ = np.empty(N_bs)
+    bias2_ = np.empty(N_bs)
+
+    for i_bs in range(N_bs):
+        X_boot, y_boot = sk_utils.resample(X_train, y_train)
+
+        kf_reg.fit(X_boot, y_boot)
+        y_pred[:, i_bs] = kf_reg.predict(X_test).ravel()
+
+        # print(sk_metrics.r2_score(y_test.flatten(), y_pred[:,i_bs].flatten()))
+ 
+        R2_[i_bs] = metrics.R2(y_test.flatten(), y_pred[:,i_bs].flatten())
+        mse_[i_bs] = metrics.mse(y_test.flatten(), y_pred[:,i_bs].flatten())
+        bias2_[i_bs] = metrics.bias2(y_test.flatten(), y_pred[:,i_bs].flatten())
+
+
+    # R2 = R2_.mean()
+    # MSE = mse_.mean()
+    # bias = bias2_.mean()
+
+    R2 = (1 - np.sum((y_test - y_pred)**2, axis=1, keepdims=True) / np.sum((y_test - y_test.mean())**2, axis=0)).mean()
+
+    # Mean Square Error, mean((y - y_approx)**2)
+    _mse = ((y_test - y_pred))**2
+    MSE = np.mean(np.mean(_mse, axis=1, keepdims=True))
+
+    # Bias, (y - mean(y_approx))^2
+    _mean_pred = np.mean(y_pred, axis=1, keepdims=True)
+    bias = np.mean((y_test - _mean_pred)**2)
+
+    # Variance, var(y_predictions)
+    var = np.mean(np.var(y_pred, axis=1, keepdims=True))
+
+
+    # # R^2 score, 1 - sum((y-y_approx)**2)/sum((y-mean(y))**2)
+    # y_pred_mean = np.mean(y_pred, axis=1)
+    # _y_test = y_test.reshape(-1)
+    # print ("R2:", metrics.R2(_y_test, y_pred_mean))
+
+    # _s1 = np.sum(((y_test - y_pred))**2, axis=1, keepdims=True)
+    # _s2 = np.sum((y_test - np.mean(y_test))**2)
+    # print (_s1.mean(), _s2)
+
+    # R2 = 1 - _s1.mean()/_s2
+    # print(np.array([sk_metrics.r2_score(y_test, y_pred[:,i]) for i in range(N_bs)]).mean())
+    # R2 = metrics.R2(y_test, y_pred, axis=1)
+    # R2 = np.mean(metrics.R2(y_test, y_pred, axis=1))
+    # print(np.mean(metrics.R2(y_test, y_pred, axis=1)))
+    # R2 = R2.mean()
+    # print(R2.mean())
+
+    print("SciKit-Learn bootstrap")
+    print("R2:    {:-20.16f}".format(R2))
+    print("MSE:   {:-20.16f}".format(MSE))
+    print("Bias^2:{:-20.16f}".format(bias))
+    print("Var(y):{:-20.16f}".format(var))
+    print("abs(MSE - bias - var(y_approx)) = ", abs(MSE - bias - var))
+
+
+def task_a_sk_learn(x, y, z, deg=1, N_bs=100, N_cv_bs=100,
+                    k_fold_size=0.2, test_percent=0.4):
     """SK-Learn implementation of OLS."""
     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
     X = poly.fit_transform(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)])
 
-    linreg = sk_model.LinearRegression()
+    linreg = sk_model.LinearRegression(fit_intercept=False)
     linreg.fit(X, z.ravel())
     z_predict = linreg.predict(X)
 
     mse_error = metrics.mse(z.ravel(), z_predict)
     beta_error = np.diag(np.linalg.inv(X.T @ X))*mse_error
 
-    print("Scikit-Learn linear regression")
     print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict)))
     print("MSE: {:-20.16f}".format(mse_error))
     print("Bias: {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
     print("Beta coefs: {}".format(linreg.coef_))
     print("Beta coefs variances: {}".format(beta_error))
 
-    # SK Learn
-    print("SciKit-Learn k-fold Cross Validation")
-    sk_learn_k_fold_cv(x, y, z, holdout_percent=holdout_percent)
-    # X_train, X_test, y_train, y_test = sk_modsel.train_test_split(
-    #     np.c_[x.ravel(), y.ravel()], z.ravel(),
-    #     test_size=holdout_percent)
-    # kf = sk_modsel.KFold(n_splits=4)
+    sk_learn_k_fold_cv(x, y, z, sk_model.LinearRegression,
+                       reg_kwargs={"fit_intercept": False},
+                       test_percent=test_percent)
 
-    # y_pred_list = []
-
-    # for train_index, test_index in kf.split(X_train):
-    #     kX_train, kX_test = X_train[train_index], X_train[test_index]
-    #     kY_train, kY_test = y_train[train_index], y_train[test_index]
-    #     kf_linreg = reg.LinearRegression()
-    #     kf_linreg.fit(kX_train, kY_train)
-    #     y_pred_list.append(kf_linreg.predict(X_test))
-
-    # y_pred_list = np.asarray(y_pred_list)
-
-    # # Mean Square Error, mean((y - y_approx)**2)
-    # _mse = (y_test - y_pred_list)**2
-    # MSE = np.mean(np.mean(_mse, axis=0, keepdims=True))
-
-    # # Bias, (y - mean(y_approx))^2
-    # _mean_pred = np.mean(y_pred_list, axis=0, keepdims=True)
-    # bias = np.mean((y_test - _mean_pred)**2)
-
-    # # R^2 score, 1 - sum(y-y_approx)/sum(y-mean(y))
-    # R2 = np.mean(metrics.R2(y_test, y_pred_list, axis=0))
-
-    # # Variance, var(y_predictions)
-    # var = np.mean(np.var(y_pred_list, axis=0, keepdims=True))
-
-    # print("R2:    {:-20.16f}".format(R2))
-    # print("MSE:   {:-20.16f}".format(MSE))
-    # print("Bias^2:{:-20.16f}".format(bias))
-    # print("Var(y):{:-20.16f}".format(var))
-    # print(abs(MSE - bias - var))
+    sk_learn_bootstrap(x, y, z, sk_model.LinearRegression,
+                       reg_kwargs={"fit_intercept": False}, N_bs=N_bs,
+                       test_percent=test_percent)
 
 
-def task_b(x, y, z, polynom_degrees=[1], alpha_values=[1e-1], N_bs=100,
-           N_cv_bs=100, test_percent=0.4, k_fold_size=0.2, 
-           holdout_percent=0.4):
-
-    alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]
-
-    print("Scikit-Learn Ridge regression")
-    for deg in polynom_degrees:
-        print("**** Polynom degree: {} ****".format(deg))
-        for alpha in alpha_values:
-            print("**** Ridge Lambda: {:-e} ****".format(alpha))
-
-            # task_b_manual(x, y, z, alpha, deg=deg,
-            #               holdout_percent=holdout_percent)
-
-            task_b_sk_learn(x, y, z, alpha, deg=deg,
-                            holdout_percent=holdout_percent)
-
-
-def task_b_manual(x, y, z, alpha, deg=5, holdout_percent=0.4):
+def task_b_manual(x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
+                  k_fold_size=0.2, test_percent=0.4):
     """Manual implementation of Ridge Regression."""
     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
     X = poly.fit_transform(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)])
 
-
     print("Manual k-fold Cross Validation")
 
 
-def task_b_sk_learn(x, y, z, alpha, deg=5, holdout_percent=0.4):
+def task_b_sk_learn(x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
+                    k_fold_size=0.2, test_percent=0.4):
     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
     X = poly.fit_transform(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)])
 
@@ -458,20 +422,42 @@ def task_b_sk_learn(x, y, z, alpha, deg=5, holdout_percent=0.4):
     print("Beta coefs: {}".format(beta))
     print("Beta coefs variances: {}".format(beta_variance))
 
-    # SK Learn
-    print("**** SciKit-Learn k-fold Cross Validation ****")
-    sk_learn_k_fold_cv(x, y, z, holdout_percent=holdout_percent)
+    sk_learn_k_fold_cv(x, y, z, sk_model.LinearRegression,
+                       reg_kwargs={"fit_intercept": False},
+                       test_percent=test_percent)
 
 
-def task_c():
-    pass
-
-
-def task_c_sk_learn(deg=5):
+def task_c_sk_learn(x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
+                    k_fold_size=0.2, test_percent=0.4):
+    """Lasso method for scikit learn."""
     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-    _X_transformed = poly.fit_transform(x)
-    pass
+    X = poly.fit_transform(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)])
+
+    ridge = sk_model.Lasso(alpha=alpha, fit_intercept=False)
+    ridge.fit(X, z.ravel())
+
+    # Gets the predicted y values
+    z_predict = ridge.predict(X)
+
+    # Ridge training score
+    R2 = ridge.score(X, z.ravel())
+
+    # Mean Square Error
+    mse = metrics.mse(z.ravel(), z_predict)
+
+    # Gets the beta coefs
+    beta = ridge.coef_
+
+    print("Lambda: {:-e}".format(alpha))
+    print("R2:     {:-20.16f}".format(R2))
+    print("MSE:    {:-20.16f}".format(mse))
+    print("Bias:   {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
+    print("Beta coefs: {}".format(beta))
+
+    sk_learn_k_fold_cv(x, y, z, sk_model.LinearRegression,
+                       reg_kwargs={"fit_intercept": False},
+                       test_percent=test_percent)
 
 
 if __name__ == '__main__':
-    task_a()
+    exit("Run from main.py")
