@@ -9,8 +9,8 @@ import sklearn.metrics as sk_metrics
 import sklearn.utils as sk_utils
 
 
-def sk_learn_k_fold_cv(x, y, z, design_matrix, reg_method, k_splits=4, 
-    test_percent=0.4, reg_kwargs={"fit_intercept": False}):
+def sk_learn_k_fold_cv(x, y, z, kf_reg, design_matrix, k_splits=4,
+                       test_percent=0.4):
     """Scikit Learn method for cross validation."""
     x_train, x_test, y_train, y_test = sk_modsel.train_test_split(
         np.c_[x.ravel(), y.ravel()], z.ravel(),
@@ -20,18 +20,16 @@ def sk_learn_k_fold_cv(x, y, z, design_matrix, reg_method, k_splits=4,
     X_test = design_matrix(x_test)
 
     y_pred_list = []
+    beta_coefs = []
 
     for train_index, test_index in kf.split(x_train):
         kx_train, kx_test = x_train[train_index], x_train[test_index]
         kY_train, kY_test = y_train[train_index], y_train[test_index]
 
-        kf_reg = reg_method(**reg_kwargs)
-        # linreg.fit(X, z.ravel())
-        # z_predict = linreg.predict(X)
-
-        # kf_reg = reg.LinearRegression()
         kf_reg.fit(design_matrix(kx_train), kY_train)
         y_pred_list.append(kf_reg.predict(X_test))
+
+        beta_coefs.append(kf_reg.coef_)
 
     y_pred_list = np.asarray(y_pred_list)
 
@@ -49,23 +47,26 @@ def sk_learn_k_fold_cv(x, y, z, design_matrix, reg_method, k_splits=4,
     # Variance, var(y_predictions)
     var = np.mean(np.var(y_pred_list, axis=0, keepdims=True))
 
+    beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
+    beta_coefs = np.asarray(beta_coefs).mean(axis=0)
+
     print("SciKit-Learn k-fold Cross Validation")
     print("R2:    {:-20.16f}".format(R2))
     print("MSE:   {:-20.16f}".format(MSE))
     print("Bias^2:{:-20.16f}".format(bias))
     print("Var(y):{:-20.16f}".format(var))
-    print("abs(MSE - bias - var(y_approx)) = ", abs(MSE - bias - var))
+    print("Beta coefs: {}".format(beta_coefs))
+    print("Beta coefs variances: {}".format(beta_coefs_var))
+    print("Diff: {}".format(abs(MSE - bias - var)))
 
 
-def sk_learn_bootstrap(x, y, z, design_matrix, reg_method, N_bs=100, test_percent=0.4,
-                       reg_kwargs={"fit_intercept": False}):
+def sk_learn_bootstrap(x, y, z, design_matrix, kf_reg, N_bs=100,
+                       test_percent=0.4):
     """Sci-kit learn bootstrap method."""
 
     x_train, x_test, y_train, y_test = sk_modsel.train_test_split(
         np.c_[x.ravel(), y.ravel()], z.ravel(),
         test_size=test_percent, shuffle=False)
-
-    design_matrix(x_train)
 
     # Ensures we are on axis shape (N_observations, N_predictors)
     y_test = y_test.reshape(-1, 1)
@@ -73,14 +74,13 @@ def sk_learn_bootstrap(x, y, z, design_matrix, reg_method, N_bs=100, test_percen
 
     y_pred = np.empty((y_test.shape[0], N_bs))
 
-    # Initializes regression method
-    kf_reg = reg_method(**reg_kwargs)
-
     X_test = design_matrix(x_test)
 
     R2_ = np.empty(N_bs)
     mse_ = np.empty(N_bs)
     bias2_ = np.empty(N_bs)
+
+    beta_coefs = []
 
     for i_bs in range(N_bs):
         x_boot, y_boot = sk_utils.resample(x_train, y_train)
@@ -89,7 +89,8 @@ def sk_learn_bootstrap(x, y, z, design_matrix, reg_method, N_bs=100, test_percen
         kf_reg.fit(X_boot, y_boot)
         # y_pred[:, i_bs] = kf_reg.predict(cp.deepcopy(x_test)).ravel()
 
-        y_predict = kf_reg.predict(X_test)
+        y_predict = kf_reg.predict(X_test
+                                   )
         # print(sk_metrics.r2_score(y_test.flatten(), y_pred[:,i_bs].flatten()))
 
         # R2_[i_bs] = sk_metrics.r2_score(y_test.flatten(), y_pred[:,i_bs].flatten())
@@ -98,7 +99,9 @@ def sk_learn_bootstrap(x, y, z, design_matrix, reg_method, N_bs=100, test_percen
         # bias2_[i_bs] = metrics.bias2(
         #     y_test.flatten(), y_pred[:, i_bs].flatten())
 
-        y_pred[:,i_bs] = y_predict.ravel()
+        y_pred[:, i_bs] = y_predict.ravel()
+
+        beta_coefs.append(kf_reg.coef_)
 
     # R2 = np.mean(R2_)
     # # print("R2 from each bs step = ",R2)
@@ -130,6 +133,9 @@ def sk_learn_bootstrap(x, y, z, design_matrix, reg_method, N_bs=100, test_percen
     # Variance, var(y_predictions)
     var = np.mean(np.var(y_pred, axis=1, keepdims=True))
 
+    beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
+    beta_coefs = np.asarray(beta_coefs).mean(axis=0)
+
     # # R^2 score, 1 - sum((y-y_approx)**2)/sum((y-mean(y))**2)
     # y_pred_mean = np.mean(y_pred, axis=1)
     # _y_test = y_test.reshape(-1)
@@ -152,4 +158,6 @@ def sk_learn_bootstrap(x, y, z, design_matrix, reg_method, N_bs=100, test_percen
     print("MSE:   {:-20.16f}".format(MSE))
     print("Bias^2:{:-20.16f}".format(bias))
     print("Var(y):{:-20.16f}".format(var))
-    print("abs(MSE - bias - var(y_approx)) = ", abs(MSE - bias - var))
+    print("Beta coefs: {}".format(beta_coefs))
+    print("Beta coefs variances: {}".format(beta_coefs_var))
+    print("Diff: {}".format(abs(MSE - bias - var)))

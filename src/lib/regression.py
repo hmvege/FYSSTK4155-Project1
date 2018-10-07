@@ -8,6 +8,8 @@ except ModuleNotFoundError:
 
 # help(super)
 
+__all__ = ["OLSRegression", "RidgeRegression", "LassoRegression"]
+
 
 class __RegBackend:
     """Backend class in case we want to run with either scipy, numpy 
@@ -113,10 +115,26 @@ class __RegBackend:
     @coef_.getter
     def coef_(self):
         return self.coef
-    
+
+    @coef_.setter
+    def coef_(self, value):
+        self.coef = value
+
+    @property
+    def coef_var(self):
+        return self.beta_coefs_var
+
+    @coef_var.getter
+    def coef_var(self):
+        return self.beta_coefs_var
+
+    @coef_var.setter
+    def coef_var(self, value):
+        self.beta_coefs_var = value
 
 
-class LinearRegression(__RegBackend):
+
+class OLSRegression(__RegBackend):
     """
     An implementation of linear regression.
 
@@ -215,7 +233,7 @@ class RidgeRegression(__RegBackend):
         self.XTX_aI_inv = self._inv(self.XTX_aI)
 
         # Beta fit values: beta = (X^T * X)^{-1} @ X^T @ y
-        self.coef = self.XTX_aI_inv @ self.X_train @ self.y_train
+        self.coef = self.XTX_aI_inv @ self.X_train.T @ self.y_train
 
         # y approximate. X @ beta
         self.y_approx = self.X_train @ self.coef
@@ -224,14 +242,14 @@ class RidgeRegression(__RegBackend):
         self.eps = self.y_train - self.y_approx
 
         # Variance of y approximate values. sigma^2
-        self.y_variance = metrics.mse(self.y, self.y_approx)
+        self.y_variance = metrics.mse(self.y_train, self.y_approx)
 
         # Beta fit covariance/variance.
         # See page 10 section 1.4 in https://arxiv.org/pdf/1509.09169.pdf
         # **REMEMBER TO CITE THIS/DERIVE THIS YOURSELF!**
-        self.coef_cov = self.y_variance
-        self.coef_cov *= self.XTX_aI_inv @ self.XTX @ self.XTX_aI_inv.T
-        self.coef_var = self.__diag(self.coef_cov)
+        self.coef_cov = self.XTX_aI_inv @ self.XTX @ self.XTX_aI_inv.T
+        self.coef_cov *= self.y_variance
+        self.coef_var = np.diag(self.coef_cov)
 
         self._fit_performed = True
 
@@ -252,13 +270,50 @@ class LassoRegression(__RegBackend):
         self.X_train = None
         self.y_train = None
 
+        raise NotImplementedError
+
     def fit(self, X_train, y_train):
         raise NotImplementedError
 
 
-if __name__ == '__main__':
-    # TestLinear = LinearRegression()
-    # TestRidge = RidgeRegression()
-    # TestLasso = LassoRegression()
+def __test_ols_regression(x, y, deg):
+    print("Testing OLS for  degree={}".format(deg))
+    import sklearn.preprocessing as sk_preproc
 
-    exit("regression.py not intended as a standalone module.")
+    poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+    X = poly.fit_transform(x, y)
+    
+    reg = OLSRegression()
+    reg.fit(X, y)
+    print("R^2: {}".format(reg.score(y, reg.predict(X))))
+
+
+
+def __test_ridge_regression(x, y, deg, alpha=1.0):
+    print("Testing Ridge for degree={} for alpha={}".format(deg,alpha))
+    import sklearn.preprocessing as sk_preproc
+
+    poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+    X = poly.fit_transform(x, y)
+    
+    reg = RidgeRegression(alpha=alpha)
+    reg.fit(X, y)
+    print("R^2: {}".format(reg.score(y, reg.predict(X))))        
+
+
+def __test_regresssions():
+    n = 100  # n cases, i = 0,1,2,...n-1
+    deg = 5
+    noise_strength = 0.1
+    np.random.seed(1)
+    x = np.random.rand(n, 1)
+    y = 5.0*x*x + np.exp(-x*x) + noise_strength*np.random.randn(n, 1)
+
+    __test_ols_regression(x, y, deg)
+
+    for alpha_ in [1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2]:
+        __test_ridge_regression(x, y, deg, alpha_)
+
+
+if __name__ == '__main__':
+    __test_regresssions()

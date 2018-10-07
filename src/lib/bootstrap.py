@@ -75,7 +75,7 @@ class BootstrapRegression:
         assert len(x_data) == len(y_data), "x and y data not of equal lengths"
         self.x_data = x_data
         self.y_data = y_data
-        self._reg = reg()
+        self._reg = reg
         self._design_matrix = design_matrix_func
 
     @property
@@ -91,8 +91,8 @@ class BootstrapRegression:
         return self._reg
 
     @reg.setter
-    def reg(self, reg, **kwargs):
-        self._reg = reg(**kwargs)
+    def reg(self, reg):
+        self._reg = reg
 
     @property
     def coef_(self):

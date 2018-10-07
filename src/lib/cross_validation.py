@@ -15,7 +15,8 @@ class __CV_core:
     _reg = None
     _design_matrix = None
 
-    def __init__(self, x_data, y_data, reg, design_matrix_func):
+    def __init__(self, x_data, y_data, reg, design_matrix_func, 
+        reg_kwargs={}):
         """Initializer for Cross Validation.
 
         Args:
@@ -29,7 +30,7 @@ class __CV_core:
         assert len(x_data) == len(y_data), "x and y data not of equal lengths"
         self.x_data = x_data
         self.y_data = y_data
-        self._reg = reg()
+        self._reg = reg
         self._design_matrix = design_matrix_func
 
     @property
@@ -45,11 +46,11 @@ class __CV_core:
         return self._reg
 
     @reg.setter
-    def reg(self, reg, **kwargs):
+    def reg(self, reg):
         """Args:
             rmethod (regression class): regression class to use
         """
-        self._reg = reg(**kwargs)
+        self._reg = reg
 
     @property
     def coef_(self):
@@ -138,6 +139,7 @@ class kFoldCrossValidation(__CV_core):
             k_y_train = np.concatenate([y_subdata[d] for d in set_list])
 
             # Trains method bu fitting data
+            print(help(self.reg.fit))
             self.reg.fit(self._design_matrix(k_x_train), k_y_train)
 
             # Getting a prediction given the test data
