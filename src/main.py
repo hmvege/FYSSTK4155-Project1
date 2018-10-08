@@ -6,6 +6,8 @@ import matplotlib.cm as cm
 import collections
 import os
 import pickle
+import time
+
 import lib.regression as libreg
 import lib.metrics as metrics
 
@@ -18,11 +20,33 @@ import imageio
 
 
 def main():
+    t1 = time.clock()
     franke_func_tasks()
-    # real_data()
 
     # franke_func_analysis()
     # real_data_analysis()
+
+    t2 = time.clock()
+
+    time_used = t2-t1    
+    print("\n")
+    print ("*"*100)
+    print ("Time used on Franke function regression: {:.10f} secs/ "
+        "{:.10f} minutes".format(time_used, time_used/60.))
+    print ("*"*100)
+
+    t3 = time.clock()
+
+    real_data()
+
+    t4 = time.clock()
+
+    time_used = t4-t3
+    print("\n")
+    print ("*"*100)
+    print ("Time used on Terrain data regression: {:.10f} secs/ "
+        "{:.10f} minutes".format(time_used, time_used/60.))
+    print ("*"*100)
 
 
 def surface_plot(surface, title):
@@ -98,11 +122,11 @@ def real_data():
 
     regression_methods = []
     regression_methods += ["ols"]
-    regression_methods += ["ridge"]
-    regression_methods += ["lasso"]
+    # regression_methods += ["ridge"]
+    # regression_methods += ["lasso"]
 
     regression_implementation = []
-    regression_implementation += ["sklearn"]
+    # regression_implementation += ["sklearn"]
     regression_implementation += ["manual"]
 
     data = run_regrssion_methods(regression_methods, polynom_degrees,
@@ -113,6 +137,7 @@ def real_data():
 
     with open("real_data.pickle", "wb") as f:
         pickle.dump(data, f)
+        print("Data pickled and dumped to: real_data.pickle")
     
 
 def franke_func_tasks():
