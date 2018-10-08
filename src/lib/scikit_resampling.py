@@ -10,7 +10,7 @@ import sklearn.utils as sk_utils
 
 
 def sk_learn_k_fold_cv(x, y, z, kf_reg, design_matrix, k_splits=4,
-                       test_percent=0.4):
+                       test_percent=0.4, print_results=True):
     """Scikit Learn method for cross validation."""
     x_train, x_test, y_train, y_test = sk_modsel.train_test_split(
         np.c_[x.ravel(), y.ravel()], z.ravel(),
@@ -50,18 +50,32 @@ def sk_learn_k_fold_cv(x, y, z, kf_reg, design_matrix, k_splits=4,
     beta_coefs_var = np.asarray(beta_coefs).var(axis=0)
     beta_coefs = np.asarray(beta_coefs).mean(axis=0)
 
-    print("SciKit-Learn k-fold Cross Validation")
-    print("R2:    {:-20.16f}".format(R2))
-    print("MSE:   {:-20.16f}".format(MSE))
-    print("Bias^2:{:-20.16f}".format(bias))
-    print("Var(y):{:-20.16f}".format(var))
-    print("Beta coefs: {}".format(beta_coefs))
-    print("Beta coefs variances: {}".format(beta_coefs_var))
-    print("Diff: {}".format(abs(MSE - bias - var)))
+    if print_results:
+        print("SciKit-Learn k-fold Cross Validation")
+        print("R2:    {:-20.16f}".format(R2))
+        print("MSE:   {:-20.16f}".format(MSE))
+        print("Bias^2:{:-20.16f}".format(bias))
+        print("Var(y):{:-20.16f}".format(var))
+        print("Beta coefs: {}".format(beta_coefs))
+        print("Beta coefs variances: {}".format(beta_coefs_var))
+        print("Diff: {}".format(abs(MSE - bias - var)))
+
+    results = {
+            "y_pred": np.mean(y_pred_list, axis=0),
+            "y_pred_var": np.var(y_pred_list, axis=0),
+            "mse": MSE,
+            "r2": R2,
+            "bias": bias,
+            "beta_coefs": beta_coefs,
+            "beta_coefs_var": beta_coefs_var,
+            "diff": abs(MSE - bias - var),
+        }
+
+    return results
 
 
 def sk_learn_bootstrap(x, y, z, design_matrix, kf_reg, N_bs=100,
-                       test_percent=0.4):
+                       test_percent=0.4, print_results=True):
     """Sci-kit learn bootstrap method."""
 
     x_train, x_test, y_train, y_test = sk_modsel.train_test_split(
@@ -153,11 +167,25 @@ def sk_learn_bootstrap(x, y, z, design_matrix, kf_reg, N_bs=100,
     # R2 = R2.mean()
     # print(R2.mean())
 
-    print("SciKit-Learn bootstrap")
-    print("R2:    {:-20.16f}".format(R2))
-    print("MSE:   {:-20.16f}".format(MSE))
-    print("Bias^2:{:-20.16f}".format(bias))
-    print("Var(y):{:-20.16f}".format(var))
-    print("Beta coefs: {}".format(beta_coefs))
-    print("Beta coefs variances: {}".format(beta_coefs_var))
-    print("Diff: {}".format(abs(MSE - bias - var)))
+    if print_results:
+        print("SciKit-Learn bootstrap")
+        print("R2:    {:-20.16f}".format(R2))
+        print("MSE:   {:-20.16f}".format(MSE))
+        print("Bias^2:{:-20.16f}".format(bias))
+        print("Var(y):{:-20.16f}".format(var))
+        print("Beta coefs: {}".format(beta_coefs))
+        print("Beta coefs variances: {}".format(beta_coefs_var))
+        print("Diff: {}".format(abs(MSE - bias - var)))
+
+    results = {
+            "y_pred": np.mean(y_pred, axis=1),
+            "y_pred_var": np.var(y_pred, axis=1),
+            "mse": MSE,
+            "r2": R2,
+            "bias": bias,
+            "beta_coefs": beta_coefs,
+            "beta_coefs_var": beta_coefs_var,
+            "diff": abs(MSE - bias - var),
+        }
+
+    return results

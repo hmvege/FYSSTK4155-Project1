@@ -34,85 +34,131 @@ rcParams["font.family"] += ["serif"]
 
 
 class _dataStorer:
-    pass    
+    _data = {}
+
+    def _fill_data_linreg(self, y_pred, r2, mse, bias, beta,
+                          beta_var=None):
+        self._data["regression"] = {
+            "y_pred": y_pred,
+            "r2": r2,
+            "mse": mse,
+            "bias": bias,
+            "beta_coefs": beta,
+            "beta_coefs_var": beta_var,
+        }
+
+    def _fill_data(self, bs_reg, method):
+        self._data[method] = {
+            "y_pred": bs_reg.y_pred,
+            "y_pred_var": bs_reg.y_pred_var,
+            "mse": bs_reg.MSE,
+            "r2": bs_reg.R2,
+            "bias": bs_reg.bias,
+            "beta_coefs": bs_reg.coef_,
+            "beta_coefs_var": bs_reg.coef_var,
+            "diff": abs(bs_reg.bias + bs_reg.var - bs_reg.MSE),
+        }
 
 
-def task_a_manual(x, y, z, deg=1, N_bs=100, N_cv_bs=100, k_splits=4,
-                  test_percent=0.4):
-    """Manual implementation of the OLS."""
+class ManualOLS(_dataStorer):
+    def __init__(self, x, y, z, deg=1, N_bs=100, N_cv_bs=100, k_splits=4,
+                      test_percent=0.4, print_results=False):
+        """Manual implementation of the OLS."""
 
-    print(x.shape, y.shape, z.shape)
-    poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-    X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
-                           cp.deepcopy(z.ravel()))
+        poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+        X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
+                               cp.deepcopy(z.ravel()))
 
-    linreg = reg.OLSRegression()
-    linreg.fit(X, cp.deepcopy(z.ravel()))
-    z_predict = linreg.predict(X).ravel()
-    print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict)))
-    print("MSE: {:-20.16f}".format(metrics.mse(z.ravel(), z_predict)))
-    print("Bias: {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
-    print("Beta coefs: {}".format(linreg.coef_))
-    print("Beta coefs variances: {}".format(linreg.coef_var))
+        linreg = reg.OLSRegression()
+        linreg.fit(X, cp.deepcopy(z.ravel()))
+        z_predict_ = linreg.predict(X).ravel()
+        if print_results:
+            print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict_)))
+            print("MSE: {:-20.16f}".format(metrics.mse(z.ravel(), z_predict_)))
+            print(
+                "Bias: {:-20.16f}".format(
+                    metrics.bias2(z.ravel(), z_predict_)))
+            print("Beta coefs: {}".format(linreg.coef_))
+            print("Beta coefs variances: {}".format(linreg.coef_var))
 
-    # Resampling with k-fold cross validation
-    print("k-fold Cross Validation")
-    kfcv = cv.kFoldCrossValidation(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        reg.OLSRegression(), poly.transform)
-    kfcv.cross_validate(k_splits=k_splits,
-                        test_percent=test_percent)
-    print("R2:    {:-20.16f}".format(kfcv.R2))
-    print("MSE:   {:-20.16f}".format(kfcv.MSE))
-    print("Bias^2:{:-20.16f}".format(kfcv.bias))
-    print("Var(y):{:-20.16f}".format(kfcv.var))
-    print("Beta coefs: {}".format(kfcv.coef_))
-    print("Beta coefs variances: {}".format(kfcv.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(kfcv.MSE, kfcv.bias, kfcv.var,
-                                     kfcv.bias + kfcv.var))
-    print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
+        self._data["regression"] = {
+            "y_pred": z_predict_,
+            "r2": metrics.R2(z.ravel(), z_predict_),
+            "mse": metrics.mse(z.ravel(), z_predict_),
+            "bias": metrics.bias2(z.ravel(), z_predict_),
+            "beta_coefs": linreg.coef_,
+            "beta_coefs_var": linreg.coef_var,
+        }
 
-    # Resampling with mc cross validation
-    print("Monte Carlo Cross Validation")
-    mccv = cv.MCCrossValidation(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        reg.OLSRegression(), poly.transform)
-    mccv.cross_validate(N_cv_bs, k_splits=k_splits,
-                        test_percent=test_percent)
-    print("R2:    {:-20.16f}".format(mccv.R2))
-    print("MSE:   {:-20.16f}".format(mccv.MSE))
-    print("Bias^2:{:-20.16f}".format(mccv.bias))
-    print("Var(y):{:-20.16f}".format(mccv.var))
-    print("Beta coefs: {}".format(mccv.coef_))
-    print("Beta coefs variances: {}".format(mccv.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(mccv.MSE, mccv.bias, mccv.var,
-                                     mccv.bias + mccv.var))
-    print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
+        # Resampling with k-fold cross validation
+        print("k-fold Cross Validation")
+        kfcv = cv.kFoldCrossValidation(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+            reg.OLSRegression(), poly.transform)
+        kfcv.cross_validate(k_splits=k_splits,
+                            test_percent=test_percent)
 
-    # Resampling with bootstrapping
-    print("Bootstrapping")
+        if print_results:
+            print("R2:    {:-20.16f}".format(kfcv.R2))
+            print("MSE:   {:-20.16f}".format(kfcv.MSE))
+            print("Bias^2:{:-20.16f}".format(kfcv.bias))
+            print("Var(y):{:-20.16f}".format(kfcv.var))
+            print("Beta coefs: {}".format(kfcv.coef_))
+            print("Beta coefs variances: {}".format(kfcv.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(kfcv.MSE, kfcv.bias, kfcv.var,
+                                             kfcv.bias + kfcv.var))
+            print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
 
-    bs_reg = bs.BootstrapRegression(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        reg.OLSRegression(), poly.transform)
-    bs_reg.bootstrap(N_bs, test_percent=test_percent)
+        self._fill_data(kfcv, "kfoldcv")
 
-    print("R2:    {:-20.16f}".format(bs_reg.R2))
-    print("MSE:   {:-20.16f}".format(bs_reg.MSE))
-    print("Bias^2:{:-20.16f}".format(bs_reg.bias))
-    print("Var(y):{:-20.16f}".format(bs_reg.var))
-    print("Beta coefs: {}".format(bs_reg.coef_))
-    print("Beta coefs variances: {}".format(bs_reg.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
-                                     bs_reg.bias + bs_reg.var))
-    print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+        # Resampling with mc cross validation
+        print("Monte Carlo Cross Validation")
+        mccv = cv.MCCrossValidation(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+            reg.OLSRegression(), poly.transform)
+        mccv.cross_validate(N_cv_bs, k_splits=k_splits,
+                            test_percent=test_percent)
+        if print_results:
+            print("R2:    {:-20.16f}".format(mccv.R2))
+            print("MSE:   {:-20.16f}".format(mccv.MSE))
+            print("Bias^2:{:-20.16f}".format(mccv.bias))
+            print("Var(y):{:-20.16f}".format(mccv.var))
+            print("Beta coefs: {}".format(mccv.coef_))
+            print("Beta coefs variances: {}".format(mccv.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(mccv.MSE, mccv.bias, mccv.var,
+                                             mccv.bias + mccv.var))
+            print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
-    # plot_simple_surface(x, y, z, filename="../../fig/frankie_surface")
+        self._fill_data(kfcv, "mccv")
 
-her burde du lese ":)"
+        # Resampling with bootstrapping
+        print("Bootstrapping")
+        bs_reg = bs.BootstrapRegression(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+            reg.OLSRegression(), poly.transform)
+        bs_reg.bootstrap(N_bs, test_percent=test_percent)
+
+        if print_results:
+            print("R2:    {:-20.16f}".format(bs_reg.R2))
+            print("MSE:   {:-20.16f}".format(bs_reg.MSE))
+            print("Bias^2:{:-20.16f}".format(bs_reg.bias))
+            print("Var(y):{:-20.16f}".format(bs_reg.var))
+            print("Beta coefs: {}".format(bs_reg.coef_))
+            print("Beta coefs variances: {}".format(bs_reg.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias,
+                                             bs_reg.var,
+                                             bs_reg.bias + bs_reg.var))
+            print("Diff: {}".format(
+                abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+
+        self._fill_data(bs_reg, "bootstrap")
+
+        # plot_simple_surface(x, y, z, filename="../../fig/frankie_surface")
+
+
 # TODO: place all functions in class, such that I can easily create a format for data and use that for storage and printing
 # TODO: implement a loop for different noise levels
 # TODO: generate plots(make them simple) of FrankeFunction fits
@@ -123,9 +169,9 @@ her burde du lese ":)"
 # TODO: complete theory
 
 
-class SKLearnOLS():
+class SKLearnOLS(_dataStorer):
     def __init__(self, x, y, z, deg=1, N_bs=100, N_cv_bs=100,
-                 k_splits=4, test_percent=0.4):
+                 k_splits=4, test_percent=0.4, print_results=False):
         """SK-Learn implementation of OLS."""
         poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
         X = poly.fit_transform(
@@ -134,17 +180,28 @@ class SKLearnOLS():
 
         linreg = sk_model.LinearRegression(fit_intercept=False)
         linreg.fit(X, z.ravel())
-        z_predict = linreg.predict(X)
+        z_predict_ = linreg.predict(X)
+        r2 = metrics.R2(z.ravel(), z_predict_)
+        bias = metrics.bias2(z.ravel(), z_predict_)
+        mse_error = metrics.mse(z.ravel(), z_predict_)
+        linreg_coef_var = np.diag(np.linalg.inv(X.T @ X))*mse_error
+        self._data["regression"] = {
+            "y_pred": z_predict_,
+            "r2": r2,
+            "mse": mse_error,
+            "bias": bias,
+            "beta_coefs": linreg.coef_,
+            "beta_coefs_var": linreg_coef_var,
+        }
 
-        mse_error = metrics.mse(z.ravel(), z_predict)
-        beta_error = np.diag(np.linalg.inv(X.T @ X))*mse_error
-
-        print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict)))
-        print("MSE: {:-20.16f}".format(mse_error))
-        print(
-            "Bias: {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
-        print("Beta coefs: {}".format(linreg.coef_))
-        print("Beta coefs variances: {}".format(beta_error))
+        # Resampling coefs
+        if print_results:
+            print("R2:  {:-20.16f}".format(r2))
+            print("MSE: {:-20.16f}".format(mse_error))
+            print(
+                "Bias: {:-20.16f}".format(bias))
+            print("Beta coefs: {}".format(linreg.coef_))
+            print("Beta coefs variances: {}".format(linreg_coef_var))
 
         # sk_resampling.sk_learn_bootstrap(cp.deepcopy(x), cp.deepcopy(y),
         #                                  cp.deepcopy(z), poly.transform,
@@ -153,266 +210,422 @@ class SKLearnOLS():
         #                                  N_bs=N_bs,
         #                                  test_percent=test_percent)
 
-        sk_resampling.sk_learn_k_fold_cv(cp.deepcopy(x), cp.deepcopy(y),
-                                         cp.deepcopy(z),
-                                         sk_model.LinearRegression(
-                                             fit_intercept=False),
-                                         poly.transform,
-                                         test_percent=test_percent,
-                                         k_splits=k_splits)
+        sk_kfold_res = sk_resampling.sk_learn_k_fold_cv(
+            cp.deepcopy(x), cp.deepcopy(y),
+            cp.deepcopy(z),
+            sk_model.LinearRegression(
+                fit_intercept=False),
+            poly.transform,
+            test_percent=test_percent,
+            k_splits=k_splits,
+            print_results=print_results)
+
+        self._data["kfoldcv"] = sk_kfold_res
 
         bs_reg = bs.BootstrapRegression(
             cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
             sk_model.LinearRegression(fit_intercept=False), poly.transform)
         bs_reg.bootstrap(N_bs, test_percent=test_percent)
 
-        print("R2:    {:-20.16f}".format(bs_reg.R2))
-        print("MSE:   {:-20.16f}".format(bs_reg.MSE))
-        print("Bias^2:{:-20.16f}".format(bs_reg.bias))
-        print("Var(y):{:-20.16f}".format(bs_reg.var))
-        print("Beta coefs: {}".format(bs_reg.coef_))
-        print("Beta coefs variances: {}".format(bs_reg.coef_var))
-        print("MSE = Bias^2 + Var(y) = ")
-        print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
-                                         bs_reg.bias + bs_reg.var))
-        print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+        # self._data["bootstrap"] = {
+        #     "y_pred": bs_reg.y_pred,
+        #     "y_pred_var": bs_reg.y_pred_var
+        #     "mse": bs_reg.MSE,
+        #     "r2": bs_reg.R2,
+        #     "bias": bs_reg.bias,
+        #     "beta_coefs": bs_reg.coef_,
+        #     "beta_coefs_var": bs_reg.coef_var,
+        #     "diff": abs(bs_reg.bias + bs_reg.var - bs_reg.MSE),
+        # }
+        self._fill_data(bs_reg, "bootstrap")
+
+        if print_results:
+            print("R2:    {:-20.16f}".format(bs_reg.R2))
+            print("MSE:   {:-20.16f}".format(bs_reg.MSE))
+            print("Bias^2:{:-20.16f}".format(bs_reg.bias))
+            print("Var(y):{:-20.16f}".format(bs_reg.var))
+            print("Beta coefs: {}".format(bs_reg.coef_))
+            print("Beta coefs variances: {}".format(bs_reg.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias,
+                                             bs_reg.var,
+                                             bs_reg.bias + bs_reg.var))
+            print("Diff: {}".format(
+                abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+
+# def task_a_sk_learn(x, y, z, deg=1, N_bs=100, N_cv_bs=100,
+#                     k_splits=4, test_percent=0.4, print_results=False):
+#     """SK-Learn implementation of OLS."""
+#     poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+#     X = poly.fit_transform(
+#         np.c_[cp.deepcopy(x).reshape(-1, 1), cp.deepcopy(y).reshape(-1, 1)])
+
+#     linreg = sk_model.LinearRegression(fit_intercept=False)
+#     linreg.fit(X, z.ravel())
+#     z_predict = linreg.predict(X)
+
+#     mse_error = metrics.mse(z.ravel(), z_predict)
+#     beta_error = np.diag(np.linalg.inv(X.T @ X))*mse_error
+
+#     print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict)))
+#     print("MSE: {:-20.16f}".format(mse_error))
+#     print(
+#         "Bias: {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
+#     print("Beta coefs: {}".format(linreg.coef_))
+#     print("Beta coefs variances: {}".format(beta_error))
+
+#     # sk_resampling.sk_learn_bootstrap(cp.deepcopy(x), cp.deepcopy(y),
+#     #                                  cp.deepcopy(z), poly.transform,
+#     #                                  sk_model.LinearRegression,
+#     #                                  reg_kwargs={"fit_intercept": False},
+#     #                                  N_bs=N_bs, test_percent=test_percent)
+
+#     sk_resampling.sk_learn_k_fold_cv(cp.deepcopy(x), cp.deepcopy(y),
+#                                      cp.deepcopy(z),
+#                                      sk_model.LinearRegression(
+#                                          fit_intercept=False),
+#                                      poly.transform,
+#                                      test_percent=test_percent,
+#                                      k_splits=k_splits)
+
+#     bs_reg = bs.BootstrapRegression(
+#         cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+#         sk_model.LinearRegression(fit_intercept=False), poly.transform)
+#     bs_reg.bootstrap(N_bs, test_percent=test_percent)
+
+#     print("R2:    {:-20.16f}".format(bs_reg.R2))
+#     print("MSE:   {:-20.16f}".format(bs_reg.MSE))
+#     print("Bias^2:{:-20.16f}".format(bs_reg.bias))
+#     print("Var(y):{:-20.16f}".format(bs_reg.var))
+#     print("Beta coefs: {}".format(bs_reg.coef_))
+#     print("Beta coefs variances: {}".format(bs_reg.coef_var))
+#     print("MSE = Bias^2 + Var(y) = ")
+#     print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
+#                                      bs_reg.bias + bs_reg.var))
+#     print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
 
 
-def task_a_sk_learn(x, y, z, deg=1, N_bs=100, N_cv_bs=100,
-                    k_splits=4, test_percent=0.4):
-    """SK-Learn implementation of OLS."""
-    poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-    X = poly.fit_transform(
-        np.c_[cp.deepcopy(x).reshape(-1, 1), cp.deepcopy(y).reshape(-1, 1)])
+class ManualRidge(_dataStorer):
+    def __init__(self, x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
+                 k_splits=4, test_percent=0.4, print_results=False):
+        """Manual implementation of Ridge Regression."""
+        poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+        X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
+                               cp.deepcopy(z.ravel()))
 
-    linreg = sk_model.LinearRegression(fit_intercept=False)
-    linreg.fit(X, z.ravel())
-    z_predict = linreg.predict(X)
+        self._data["alpha"] = alpha
 
-    mse_error = metrics.mse(z.ravel(), z_predict)
-    beta_error = np.diag(np.linalg.inv(X.T @ X))*mse_error
+        linreg = reg.RidgeRegression(alpha)
+        linreg.fit(X, cp.deepcopy(z.ravel()))
+        z_predict_ = linreg.predict(X).ravel()
+        mse_error = metrics.mse(z.ravel(), z_predict_)
+        linreg_coef_var = np.diag(np.linalg.inv(X.T @ X))*mse_error
+        r2 = metrics.R2(z.ravel(), z_predict_)
+        bias = metrics.bias2(z.ravel(), z_predict_)
+        self._data["regression"] = {
+            "y_pred": z_predict_,
+            "r2": r2,
+            "mse": mse_error,
+            "bias": bias,
+            "beta_coefs": linreg.coef_,
+            "beta_coefs_var": linreg_coef_var,
+        }
+        if print_results:
+            print("R2:  {:-20.16f}".format(r2))
+            print("MSE: {:-20.16f}".format(mse_error))
+            print("Bias: {:-20.16f}".format(bias))
+            print("Beta coefs: {}".format(linreg.coef_))
+            print("Beta coefs variances: {}".format(linreg.coef_var))
 
-    print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict)))
-    print("MSE: {:-20.16f}".format(mse_error))
-    print(
-        "Bias: {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
-    print("Beta coefs: {}".format(linreg.coef_))
-    print("Beta coefs variances: {}".format(beta_error))
+        # Resampling with k-fold cross validation
+        print("k-fold Cross Validation")
+        kfcv = cv.kFoldCrossValidation(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+            reg.RidgeRegression(alpha=alpha), poly.transform)
+        kfcv.cross_validate(k_splits=k_splits,
+                            test_percent=test_percent)
+        self._fill_data(kfcv, "kfoldcv")
 
-    # sk_resampling.sk_learn_bootstrap(cp.deepcopy(x), cp.deepcopy(y),
-    #                                  cp.deepcopy(z), poly.transform,
-    #                                  sk_model.LinearRegression,
-    #                                  reg_kwargs={"fit_intercept": False},
-    #                                  N_bs=N_bs, test_percent=test_percent)
+        if print_results:
+            print("R2:    {:-20.16f}".format(kfcv.R2))
+            print("MSE:   {:-20.16f}".format(kfcv.MSE))
+            print("Bias^2:{:-20.16f}".format(kfcv.bias))
+            print("Var(y):{:-20.16f}".format(kfcv.var))
+            print("Beta coefs: {}".format(kfcv.coef_))
+            print("Beta coefs variances: {}".format(kfcv.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(kfcv.MSE, kfcv.bias, kfcv.var,
+                                             kfcv.bias + kfcv.var))
+            print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
 
-    sk_resampling.sk_learn_k_fold_cv(cp.deepcopy(x), cp.deepcopy(y),
-                                     cp.deepcopy(z),
-                                     sk_model.LinearRegression(
-                                         fit_intercept=False),
-                                     poly.transform,
-                                     test_percent=test_percent,
-                                     k_splits=k_splits)
+        # Resampling with mc cross validation
+        print("Monte Carlo Cross Validation")
+        mccv = cv.MCCrossValidation(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+            reg.RidgeRegression(alpha=alpha), poly.transform)
+        mccv.cross_validate(N_cv_bs, k_splits=k_splits,
+                            test_percent=test_percent)
+        self._fill_data(mccv, "mccv")
 
-    bs_reg = bs.BootstrapRegression(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        sk_model.LinearRegression(fit_intercept=False), poly.transform)
-    bs_reg.bootstrap(N_bs, test_percent=test_percent)
+        if print_results:
+            print("R2:    {:-20.16f}".format(mccv.R2))
+            print("MSE:   {:-20.16f}".format(mccv.MSE))
+            print("Bias^2:{:-20.16f}".format(mccv.bias))
+            print("Var(y):{:-20.16f}".format(mccv.var))
+            print("Beta coefs: {}".format(mccv.coef_))
+            print("Beta coefs variances: {}".format(mccv.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(mccv.MSE, mccv.bias, mccv.var,
+                                             mccv.bias + mccv.var))
+            print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
-    print("R2:    {:-20.16f}".format(bs_reg.R2))
-    print("MSE:   {:-20.16f}".format(bs_reg.MSE))
-    print("Bias^2:{:-20.16f}".format(bs_reg.bias))
-    print("Var(y):{:-20.16f}".format(bs_reg.var))
-    print("Beta coefs: {}".format(bs_reg.coef_))
-    print("Beta coefs variances: {}".format(bs_reg.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
-                                     bs_reg.bias + bs_reg.var))
-    print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+        # Resampling with bootstrapping
+        print("Bootstrapping")
+        bs_reg = bs.BootstrapRegression(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+            reg.RidgeRegression(alpha=alpha), poly.transform)
+        bs_reg.bootstrap(N_bs, test_percent=test_percent)
+        self._fill_data(bs_reg, "bootstrap")
 
+        if print_results:
+            print("R2:    {:-20.16f}".format(bs_reg.R2))
+            print("MSE:   {:-20.16f}".format(bs_reg.MSE))
+            print("Bias^2:{:-20.16f}".format(bs_reg.bias))
+            print("Var(y):{:-20.16f}".format(bs_reg.var))
+            print("Beta coefs: {}".format(bs_reg.coef_))
+            print("Beta coefs variances: {}".format(bs_reg.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias,
+                                             bs_reg.var,
+                                             bs_reg.bias + bs_reg.var))
+            print("Diff: {}".format(
+                abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
 
-def task_b_manual(x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
-                  k_splits=4, test_percent=0.4):
-    """Manual implementation of Ridge Regression."""
-    poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-    X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
-                           cp.deepcopy(z.ravel()))
+# class SKLearnRidge(_dataStorer):
+#     def __init__(self, x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
+#                   k_splits=4, test_percent=0.4, print_results=False):
+#         """Manual implementation of Ridge Regression."""
+#         poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+#         X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
+#                                cp.deepcopy(z.ravel()))
 
-    linreg = reg.RidgeRegression(alpha)
-    linreg.fit(X, cp.deepcopy(z.ravel()))
-    z_predict = linreg.predict(X).ravel()
-    print("R2:  {:-20.16f}".format(metrics.R2(z.ravel(), z_predict)))
-    print("MSE: {:-20.16f}".format(metrics.mse(z.ravel(), z_predict)))
-    print("Bias: {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
-    print("Beta coefs: {}".format(linreg.coef_))
-    print("Beta coefs variances: {}".format(linreg.coef_var))
+#         linreg = reg.RidgeRegression(alpha)
+#         linreg.fit(X, cp.deepcopy(z.ravel()))
+#         z_predict = linreg.predict(X).ravel()
+#         r2 = metrics.R2(z.ravel(), z_predict)
+#         mse = metrics.mse(z.ravel(), z_predict)
+#         bias = metrics.bias2(z.ravel(), z_predict)
+#         if print_results:
+#             print("R2:  {:-20.16f}".format(r2))
+#             print("MSE: {:-20.16f}".format(mse))
+#             print("Bias: {:-20.16f}".format(bias))
+#             print("Beta coefs: {}".format(linreg.coef_))
+#             print("Beta coefs variances: {}".format(linreg.coef_var))
 
-    # Resampling with k-fold cross validation
-    print("k-fold Cross Validation")
-    kfcv = cv.kFoldCrossValidation(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        reg.RidgeRegression(alpha=alpha), poly.transform)
-    kfcv.cross_validate(k_splits=k_splits,
-                        test_percent=test_percent)
-    print("R2:    {:-20.16f}".format(kfcv.R2))
-    print("MSE:   {:-20.16f}".format(kfcv.MSE))
-    print("Bias^2:{:-20.16f}".format(kfcv.bias))
-    print("Var(y):{:-20.16f}".format(kfcv.var))
-    print("Beta coefs: {}".format(kfcv.coef_))
-    print("Beta coefs variances: {}".format(kfcv.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(kfcv.MSE, kfcv.bias, kfcv.var,
-                                     kfcv.bias + kfcv.var))
-    print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
+#         # Resampling with k-fold cross validation
+#         print("k-fold Cross Validation")
+#         kfcv = cv.kFoldCrossValidation(
+#             cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+#             reg.RidgeRegression(alpha=alpha), poly.transform)
+#         kfcv.cross_validate(k_splits=k_splits,
+#                             test_percent=test_percent)
+#         print("R2:    {:-20.16f}".format(kfcv.R2))
+#         print("MSE:   {:-20.16f}".format(kfcv.MSE))
+#         print("Bias^2:{:-20.16f}".format(kfcv.bias))
+#         print("Var(y):{:-20.16f}".format(kfcv.var))
+#         print("Beta coefs: {}".format(kfcv.coef_))
+#         print("Beta coefs variances: {}".format(kfcv.coef_var))
+#         print("MSE = Bias^2 + Var(y) = ")
+#         print("{} = {} + {} = {}".format(kfcv.MSE, kfcv.bias, kfcv.var,
+#                                          kfcv.bias + kfcv.var))
+#         print("Diff: {}".format(abs(kfcv.bias + kfcv.var - kfcv.MSE)))
 
-    # Resampling with mc cross validation
-    print("Monte Carlo Cross Validation")
-    mccv = cv.MCCrossValidation(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        reg.RidgeRegression(alpha=alpha), poly.transform)
-    mccv.cross_validate(N_cv_bs, k_splits=k_splits,
-                        test_percent=test_percent)
-    print("R2:    {:-20.16f}".format(mccv.R2))
-    print("MSE:   {:-20.16f}".format(mccv.MSE))
-    print("Bias^2:{:-20.16f}".format(mccv.bias))
-    print("Var(y):{:-20.16f}".format(mccv.var))
-    print("Beta coefs: {}".format(mccv.coef_))
-    print("Beta coefs variances: {}".format(mccv.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(mccv.MSE, mccv.bias, mccv.var,
-                                     mccv.bias + mccv.var))
-    print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
+#         # Resampling with mc cross validation
+#         print("Monte Carlo Cross Validation")
+#         mccv = cv.MCCrossValidation(
+#             cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+#             reg.RidgeRegression(alpha=alpha), poly.transform)
+#         mccv.cross_validate(N_cv_bs, k_splits=k_splits,
+#                             test_percent=test_percent)
+#         print("R2:    {:-20.16f}".format(mccv.R2))
+#         print("MSE:   {:-20.16f}".format(mccv.MSE))
+#         print("Bias^2:{:-20.16f}".format(mccv.bias))
+#         print("Var(y):{:-20.16f}".format(mccv.var))
+#         print("Beta coefs: {}".format(mccv.coef_))
+#         print("Beta coefs variances: {}".format(mccv.coef_var))
+#         print("MSE = Bias^2 + Var(y) = ")
+#         print("{} = {} + {} = {}".format(mccv.MSE, mccv.bias, mccv.var,
+#                                          mccv.bias + mccv.var))
+#         print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
-    # Resampling with bootstrapping
-    print("Bootstrapping")
+#         # Resampling with bootstrapping
+#         print("Bootstrapping")
 
-    bs_reg = bs.BootstrapRegression(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        reg.RidgeRegression(alpha=alpha), poly.transform)
-    bs_reg.bootstrap(N_bs, test_percent=test_percent)
+#         bs_reg = bs.BootstrapRegression(
+#             cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+#             reg.RidgeRegression(alpha=alpha), poly.transform)
+#         bs_reg.bootstrap(N_bs, test_percent=test_percent)
 
-    print("R2:    {:-20.16f}".format(bs_reg.R2))
-    print("MSE:   {:-20.16f}".format(bs_reg.MSE))
-    print("Bias^2:{:-20.16f}".format(bs_reg.bias))
-    print("Var(y):{:-20.16f}".format(bs_reg.var))
-    print("Beta coefs: {}".format(bs_reg.coef_))
-    print("Beta coefs variances: {}".format(bs_reg.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
-                                     bs_reg.bias + bs_reg.var))
-    print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
-
-
-def task_b_sk_learn(x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
-                    k_splits=4, test_percent=0.4):
-    poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-    X = poly.fit_transform(
-        cp.deepcopy(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)]))
-
-    ridge = sk_model.Ridge(alpha=alpha, solver="lsqr", fit_intercept=False)
-    ridge.fit(X, z.ravel())
-
-    # Gets the predicted y values
-    z_predict = ridge.predict(X)
-
-    # Ridge training score
-    R2 = ridge.score(X, z.ravel())
-
-    # Mean Square Error
-    mse = metrics.mse(z.ravel(), z_predict)
-
-    # Gets the beta coefs
-    beta = ridge.coef_
-
-    # Gets the beta variance
-    beta_variance = metrics.ridge_regression_variance(
-        X, mse, alpha)
-
-    print("Lambda: {:-e}".format(alpha))
-    print("R2:     {:-20.16f}".format(R2))
-    print("MSE:    {:-20.16f}".format(mse))
-    print("Bias:   {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
-    print("Beta coefs: {}".format(beta))
-    print("Beta coefs variances: {}".format(beta_variance))
-
-    reg_kwargs = {"alpha": alpha, "fit_intercept": False, "solver": "lsqr"}
-    sk_resampling.sk_learn_k_fold_cv(cp.deepcopy(x), cp.deepcopy(y),
-                                     cp.deepcopy(z),
-                                     sk_model.Ridge(
-                                         **reg_kwargs), poly.transform,
-                                     test_percent=test_percent,
-                                     k_splits=k_splits)
-
-    # Resampling with bootstrapping
-    print("Bootstrapping")
-    bs_reg = bs.BootstrapRegression(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        sk_model.Ridge(**reg_kwargs), poly.transform)
-    bs_reg.bootstrap(N_bs, test_percent=test_percent)
-
-    print("R2:    {:-20.16f}".format(bs_reg.R2))
-    print("MSE:   {:-20.16f}".format(bs_reg.MSE))
-    print("Bias^2:{:-20.16f}".format(bs_reg.bias))
-    print("Var(y):{:-20.16f}".format(bs_reg.var))
-    print("Beta coefs: {}".format(bs_reg.coef_))
-    print("Beta coefs variances: {}".format(bs_reg.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
-                                     bs_reg.bias + bs_reg.var))
-    print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+#         print("R2:    {:-20.16f}".format(bs_reg.R2))
+#         print("MSE:   {:-20.16f}".format(bs_reg.MSE))
+#         print("Bias^2:{:-20.16f}".format(bs_reg.bias))
+#         print("Var(y):{:-20.16f}".format(bs_reg.var))
+#         print("Beta coefs: {}".format(bs_reg.coef_))
+#         print("Beta coefs variances: {}".format(bs_reg.coef_var))
+#         print("MSE = Bias^2 + Var(y) = ")
+#         print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
+#                                          bs_reg.bias + bs_reg.var))
+#         print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
 
 
-def task_c_sk_learn(x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
-                    k_splits=4, test_percent=0.4):
-    """Lasso method for scikit learn."""
-    poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-    X = poly.fit_transform(
-        cp.deepcopy(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)]))
+class SKLearnRidge(_dataStorer):
+    def __init__(self, x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
+                 k_splits=4, test_percent=0.4, print_results=False):
+        poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+        X = poly.fit_transform(
+            cp.deepcopy(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)]))
 
-    ridge = sk_model.Lasso(alpha=alpha, fit_intercept=False)
-    ridge.fit(X, z.ravel())
+        ridge = sk_model.Ridge(alpha=alpha, solver="lsqr", fit_intercept=False)
+        ridge.fit(X, z.ravel())
 
-    # Gets the predicted y values
-    z_predict = ridge.predict(X)
+        # Gets the predicted y values
+        z_predict = ridge.predict(X)
 
-    # Ridge training score
-    R2 = ridge.score(X, z.ravel())
+        R2 = ridge.score(X, z.ravel())
+        mse = metrics.mse(z.ravel(), z_predict)
+        bias = metrics.bias2(z.ravel(), z_predict)
 
-    # Mean Square Error
-    mse = metrics.mse(z.ravel(), z_predict)
+        # Gets the beta variance
+        beta_variance = metrics.ridge_regression_variance(
+            X, mse, alpha)
 
-    # Gets the beta coefs
-    beta = ridge.coef_
+        self._data["alpha"] = alpha
+        self._data["regression"] = {
+            "y_pred": z_predict,
+            "r2": R2,
+            "mse": mse,
+            "bias": bias,
+            "beta_coefs": ridge.coef_,
+            "beta_coefs_var": beta_variance,
+        }
 
-    print("Lambda: {:-e}".format(alpha))
-    print("R2:     {:-20.16f}".format(R2))
-    print("MSE:    {:-20.16f}".format(mse))
-    print("Bias:   {:-20.16f}".format(metrics.bias2(z.ravel(), z_predict)))
-    print("Beta coefs: {}".format(beta))
+        if print_results:
+            print("Lambda: {:-e}".format(alpha))
+            print("R2:     {:-20.16f}".format(R2))
+            print("MSE:    {:-20.16f}".format(mse))
+            print("Bias:   {:-20.16f}".format(bias))
+            print("Beta coefs: {}".format(ridge.coef_))
+            print("Beta coefs variances: {}".format(beta_variance))
 
-    reg_kwargs = {"alpha": alpha, "fit_intercept": False}
-    sk_resampling.sk_learn_k_fold_cv(cp.deepcopy(x), cp.deepcopy(y),
-                                     cp.deepcopy(z),
-                                     sk_model.Lasso(**reg_kwargs),
-                                     poly.transform,
-                                     test_percent=test_percent,
-                                     k_splits=k_splits)
+        reg_kwargs = {"alpha": alpha, "fit_intercept": False, "solver": "lsqr"}
+        kfcf_results = sk_resampling.sk_learn_k_fold_cv(
+            cp.deepcopy(x),
+            cp.deepcopy(y),
+            cp.deepcopy(z),
+            sk_model.Ridge(
+                **reg_kwargs),
+            poly.transform,
+            test_percent=test_percent,
+            k_splits=k_splits,
+            print_results=print_results)
+        self._data["kfoldcv"] = kfcf_results
 
-    bs_reg = bs.BootstrapRegression(
-        cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
-        sk_model.Lasso(**reg_kwargs), poly.transform)
-    bs_reg.reg = sk_model.Lasso(alpha=alpha, fit_intercept=False)
-    bs_reg.bootstrap(N_bs, test_percent=test_percent)
+        # Resampling with bootstrapping
+        print("Bootstrapping")
+        bs_reg = bs.BootstrapRegression(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
+            cp.deepcopy(z.ravel()),
+            sk_model.Ridge(**reg_kwargs), poly.transform)
+        bs_reg.bootstrap(N_bs, test_percent=test_percent)
 
-    print("R2:    {:-20.16f}".format(bs_reg.R2))
-    print("MSE:   {:-20.16f}".format(bs_reg.MSE))
-    print("Bias^2:{:-20.16f}".format(bs_reg.bias))
-    print("Var(y):{:-20.16f}".format(bs_reg.var))
-    print("Beta coefs: {}".format(bs_reg.coef_))
-    print("Beta coefs variances: {}".format(bs_reg.coef_var))
-    print("MSE = Bias^2 + Var(y) = ")
-    print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias, bs_reg.var,
-                                     bs_reg.bias + bs_reg.var))
-    print("Diff: {}".format(abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+        self._fill_data(bs_reg, "bootstrap")
+
+        if print_results:
+            print("R2:    {:-20.16f}".format(bs_reg.R2))
+            print("MSE:   {:-20.16f}".format(bs_reg.MSE))
+            print("Bias^2:{:-20.16f}".format(bs_reg.bias))
+            print("Var(y):{:-20.16f}".format(bs_reg.var))
+            print("Beta coefs: {}".format(bs_reg.coef_))
+            print("Beta coefs variances: {}".format(bs_reg.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias,
+                                             bs_reg.var,
+                                             bs_reg.bias + bs_reg.var))
+            print("Diff: {}".format(
+                abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
+
+
+class SKLearnLasso(_dataStorer):
+    def __init__(self, x, y, z, alpha, deg=5, N_bs=100, N_cv_bs=100,
+                 k_splits=4, test_percent=0.4, print_results=False):
+        """Lasso method for scikit learn."""
+        poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+        X = poly.fit_transform(
+            cp.deepcopy(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)]))
+
+        ridge = sk_model.Lasso(alpha=alpha, fit_intercept=False)
+        ridge.fit(X, z.ravel())
+
+        # Gets the predicted y values
+        z_predict = ridge.predict(X)
+
+        bias = metrics.bias2(z.ravel(), z_predict)
+        R2 = ridge.score(X, z.ravel())
+        mse = metrics.mse(z.ravel(), z_predict)
+
+        # Gets the beta coefs
+        beta = ridge.coef_
+
+        self._data["alpha"] = alpha
+        self._data["regression"] = {
+            "y_pred": z_predict,
+            "r2": R2,
+            "mse": mse,
+            "bias": bias,
+            "beta_coefs": ridge.coef_,
+            "beta_coefs_var": None,
+        }
+
+        if print_results:
+            print("Lambda: {:-e}".format(alpha))
+            print("R2:     {:-20.16f}".format(R2))
+            print("MSE:    {:-20.16f}".format(mse))
+            print("Bias:   {:-20.16f}".format(bias))
+            print("Beta coefs: {}".format(beta))
+
+        reg_kwargs = {"alpha": alpha, "fit_intercept": False}
+        sk_results = sk_resampling.sk_learn_k_fold_cv(
+            cp.deepcopy(x),
+            cp.deepcopy(y),
+            cp.deepcopy(z),
+            sk_model.Lasso(
+                **reg_kwargs),
+            poly.transform,
+            test_percent=test_percent,
+            k_splits=k_splits)
+        self._data["kfoldcv"] = sk_results
+
+        bs_reg = bs.BootstrapRegression(
+            cp.deepcopy(np.c_[x.ravel(), y.ravel()]), cp.deepcopy(z.ravel()),
+            sk_model.Lasso(**reg_kwargs), poly.transform)
+        bs_reg.reg = sk_model.Lasso(alpha=alpha, fit_intercept=False)
+        bs_reg.bootstrap(N_bs, test_percent=test_percent)
+
+        self._fill_data(bs_reg, "bootstrap")
+
+        if print_results:
+            print("R2:    {:-20.16f}".format(bs_reg.R2))
+            print("MSE:   {:-20.16f}".format(bs_reg.MSE))
+            print("Bias^2:{:-20.16f}".format(bs_reg.bias))
+            print("Var(y):{:-20.16f}".format(bs_reg.var))
+            print("Beta coefs: {}".format(bs_reg.coef_))
+            print("Beta coefs variances: {}".format(bs_reg.coef_var))
+            print("MSE = Bias^2 + Var(y) = ")
+            print("{} = {} + {} = {}".format(bs_reg.MSE, bs_reg.bias,
+                                             bs_reg.var,
+                                             bs_reg.bias + bs_reg.var))
+            print("Diff: {}".format(
+                abs(bs_reg.bias + bs_reg.var - bs_reg.MSE)))
 
 
 if __name__ == '__main__':

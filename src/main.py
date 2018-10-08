@@ -21,17 +21,18 @@ def main():
     franke_func_tasks()
     # real_data()
 
-def surface_plot(surface,title):
-    M,N = surface.shape
+
+def surface_plot(surface, title):
+    M, N = surface.shape
 
     ax_rows = np.arange(M)
     ax_cols = np.arange(N)
 
-    [X,Y] = np.meshgrid(ax_cols, ax_rows)
+    [X, Y] = np.meshgrid(ax_cols, ax_rows)
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    ax.plot_surface(X,Y,surface,cmap=cm.viridis,linewidth=0)
+    ax.plot_surface(X, Y, surface, cmap=cm.viridis, linewidth=0)
     plt.title(title)
 
 
@@ -42,10 +43,9 @@ def real_data():
     folder_path = "../../MachineLearning/doc/Projects/2018/Project1/DataFiles/"
     abs_folder_path = os.path.abspath(folder_path)
     data_path = os.path.join(abs_folder_path, os.listdir(abs_folder_path)[0])
-    
+
     print("Loading data from:", data_path)
     terrain = imageio.imread(data_path)
-
 
     # plt.figure()
     # plt.imshow(data)
@@ -64,7 +64,7 @@ def real_data():
     terrain_patch = terrain_patch/np.amax(terrain_patch)
 
     # Sets up X,Y,Z data
-    M,N = terrain_patch.shape
+    M, N = terrain_patch.shape
 
     # print (row_end-row_start, M)
     # print (col_end-col_start, N)
@@ -75,7 +75,7 @@ def real_data():
     ax_rows = np.arange(M)
     ax_cols = np.arange(N)
 
-    [x,y] = np.meshgrid(ax_cols, ax_rows)
+    [x, y] = np.meshgrid(ax_cols, ax_rows)
     z = terrain_patch
 
     # surface_plot(terrain1, "Surface plot over Norway")
@@ -102,67 +102,73 @@ def real_data():
     regression_implementation += ["sklearn"]
     # regression_implementation += ["manual"]
 
-    if "ols" in regression_methods:
-        print("\nOrdinarty Linear Regression")
-        for degree in polynom_degrees:
-            print("\n**** Polynom degree: {} ****".format(degree))
+    run_regrssion_methods(regression_methods, polynom_degrees,
+                          regression_implementation,
+                          x, y, z, N_bs_resampling, N_cv_bs, test_percent,
+                          alpha_values)
 
-            if "manual" in regression_implementation:
-                reggen.task_a_manual(x, y, z, deg=degree,
-                                       N_bs=N_bs_resampling,
-                                       N_cv_bs=N_cv_bs,
-                                       test_percent=test_percent)
+    # if "ols" in regression_methods:
+    #     print("\nOrdinarty Linear Regression")
+    #     for degree in polynom_degrees:
+    #         print("\n**** Polynom degree: {} ****".format(degree))
 
-            if "sklearn" in regression_implementation:
-                reggen.task_a_sk_learn(x, y, z, deg=degree,
-                                         N_bs=N_bs_resampling,
-                                         N_cv_bs=N_cv_bs,
-                                         test_percent=test_percent)
+    #         if "manual" in regression_implementation:
+    #             ols = reggen.ManualOLS(x, y, z, deg=degree,
+    #                                    N_bs=N_bs_resampling,
+    #                                    N_cv_bs=N_cv_bs,
+    #                                    test_percent=test_percent)
 
-    if "ridge" in regression_methods:
-        print("\nRidge Regression")
-        for deg in polynom_degrees:
-            print("\n**** Polynom degree: {} ****".format(deg))
-            for alpha in alpha_values:
-                print("\n**** Ridge Lambda: {:-e} ****".format(alpha))
+    #         if "sklearn" in regression_implementation:
+    #             sk_ols = reggen.SKLearnOLS(x, y, z, deg=degree,
+    #                                        N_bs=N_bs_resampling,
+    #                                        N_cv_bs=N_cv_bs,
+    #                                        test_percent=test_percent)
 
-                if "manual" in regression_implementation:
-                    reggen.task_b_manual(x, y, z, alpha, deg=deg,
-                                           test_percent=test_percent)
+    # if "ridge" in regression_methods:
+    #     print("\nRidge Regression")
+    #     for deg in polynom_degrees:
+    #         print("\n**** Polynom degree: {} ****".format(deg))
+    #         for alpha in alpha_values:
+    #             print("\n**** Ridge Lambda: {:-e} ****".format(alpha))
 
-                if "sklearn" in regression_implementation:
-                    reggen.task_b_sk_learn(x, y, z, alpha, deg=deg,
-                                             test_percent=test_percent)
+    #             if "manual" in regression_implementation:
+    #                 ridge = reggen.ManualRidge(x, y, z, alpha, deg=deg,
+    #                                            test_percent=test_percent)
 
-    if "lasso" in regression_methods:
-        print("\nLasso Regression")
-        for deg in polynom_degrees:
-            print("\n**** Polynom degree: {} ****".format(deg))
-            for alpha in alpha_values:
-                print("\n**** Lasso Lambda: {:-e} ****".format(alpha))
+    #             if "sklearn" in regression_implementation:
+    #                 sk_ridge = reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
+    #                                                test_percent=test_percent)
 
-                # if "manual" in regression_implementation:
-                #     reggen.task_c_manual(x, y, z, alpha, deg=deg,
-                #                   test_percent=test_percent)
+    # if "lasso" in regression_methods:
+    #     print("\nLasso Regression")
+    #     for deg in polynom_degrees:
+    #         print("\n**** Polynom degree: {} ****".format(deg))
+    #         for alpha in alpha_values:
+    #             print("\n**** Lasso Lambda: {:-e} ****".format(alpha))
 
-                if "sklearn" in regression_implementation:
-                    reggen.task_c_sk_learn(x, y, z, alpha, deg=deg,
-                                             test_percent=test_percent)
+    #             # if "manual" in regression_implementation:
+    #             #     reggen.task_c_manual(x, y, z, alpha, deg=deg,
+    #             #                   test_percent=test_percent)
+
+    #             if "sklearn" in regression_implementation:
+    #                 sk_lasso = reggen.SKLearnLasso(x, y, z, alpha, deg=deg,
+    #                                                test_percent=test_percent)
 
 
 def franke_func_tasks():
     """Part a)-c)."""
 
     # Generates data
-    N_data_points = 100
+    N_data_points = 150 # 150
     x = np.sort(np.random.uniform(0, 1, N_data_points))
     y = np.sort(np.random.uniform(0, 1, N_data_points))
 
     # Analysis constants
-    N_bs_resampling = 1000
+    N_bs_resampling = 1000 # 1000
     N_cv_bs = 100
     k_splits = 4
     test_percent = 0.4
+    print_results = True
 
     noise_sigma = 0.1
     noise_mu = 0
@@ -173,12 +179,12 @@ def franke_func_tasks():
 
     regression_methods = []
     regression_methods += ["ols"]
-    # regression_methods += ["ridge"]
-    # regression_methods += ["lasso"]
+    regression_methods += ["ridge"]
+    regression_methods += ["lasso"]
 
     regression_implementation = []
     regression_implementation += ["sklearn"]
-    # regression_implementation += ["manual"]
+    regression_implementation += ["manual"]
 
     # x += np.random.uniform(noise_mu, noise_sigma, N)
     # y += np.random.uniform(noise_mu, noise_sigma, N)
@@ -187,6 +193,62 @@ def franke_func_tasks():
     z = ff_tools.FrankeFunction(x, y)
 
     np.save("surface_plotter/data", np.c_[x, y, z])
+    run_regrssion_methods(regression_methods, polynom_degrees,
+                          regression_implementation,
+                          x, y, z, N_bs_resampling, N_cv_bs, test_percent,
+                          alpha_values, print_results)
+
+    # if "ols" in regression_methods:
+    #     print("\nOrdinarty Linear Regression")
+    #     for degree in polynom_degrees:
+    #         print("\n**** Polynom degree: {} ****".format(degree))
+
+    #         if "manual" in regression_implementation:
+    #             ols = reggen.ManualOLS(x, y, z, deg=degree,
+    #                                    N_bs=N_bs_resampling,
+    #                                    N_cv_bs=N_cv_bs,
+    #                                    test_percent=test_percent)
+
+    #         if "sklearn" in regression_implementation:
+    #             sk_ols = reggen.SKLearnOLS(x, y, z, deg=degree,
+    #                                        N_bs=N_bs_resampling,
+    #                                        N_cv_bs=N_cv_bs,
+    #                                        test_percent=test_percent)
+
+    # if "ridge" in regression_methods:
+    #     print("\nRidge Regression")
+    #     for deg in polynom_degrees:
+    #         print("\n**** Polynom degree: {} ****".format(deg))
+    #         for alpha in alpha_values:
+    #             print("\n**** Ridge Lambda: {:-e} ****".format(alpha))
+
+    #             if "manual" in regression_implementation:
+    #                 ridge = reggen.ManualRidge(x, y, z, alpha, deg=deg,
+    #                                            test_percent=test_percent)
+
+    #             if "sklearn" in regression_implementation:
+    #                 sk_ridge = reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
+    #                                                test_percent=test_percent)
+
+    # if "lasso" in regression_methods:
+    #     print("\nLasso Regression")
+    #     for deg in polynom_degrees:
+    #         print("\n**** Polynom degree: {} ****".format(deg))
+    #         for alpha in alpha_values:
+    #             print("\n**** Lasso Lambda: {:-e} ****".format(alpha))
+
+    #             # if "manual" in regression_implementation:
+    #             #     reggen.task_c_manual(x, y, z, alpha, deg=deg,
+    #             #                   test_percent=test_percent)
+
+    #             if "sklearn" in regression_implementation:
+    #                 sk_lasso = reggen.SKLearnLasso(x, y, z, alpha, deg=deg,
+    #                                                test_percent=test_percent)
+
+
+def run_regrssion_methods(regression_methods, polynom_degrees,
+                          regression_implementation, x, y, z, N_bs_resampling,
+                          N_cv_bs, test_percent, alpha_values, print_results):
 
     if "ols" in regression_methods:
         print("\nOrdinarty Linear Regression")
@@ -194,16 +256,18 @@ def franke_func_tasks():
             print("\n**** Polynom degree: {} ****".format(degree))
 
             if "manual" in regression_implementation:
-                reggen.task_a_manual(x, y, z, deg=degree,
+                ols = reggen.ManualOLS(x, y, z, deg=degree,
                                        N_bs=N_bs_resampling,
                                        N_cv_bs=N_cv_bs,
-                                       test_percent=test_percent)
+                                       test_percent=test_percent,
+                                       print_results=print_results)
 
             if "sklearn" in regression_implementation:
-                reggen.task_a_sk_learn(x, y, z, deg=degree,
-                                         N_bs=N_bs_resampling,
-                                         N_cv_bs=N_cv_bs,
-                                         test_percent=test_percent)
+                sk_ols = reggen.SKLearnOLS(x, y, z, deg=degree,
+                                           N_bs=N_bs_resampling,
+                                           N_cv_bs=N_cv_bs,
+                                           test_percent=test_percent,
+                                           print_results=print_results)
 
     if "ridge" in regression_methods:
         print("\nRidge Regression")
@@ -213,12 +277,14 @@ def franke_func_tasks():
                 print("\n**** Ridge Lambda: {:-e} ****".format(alpha))
 
                 if "manual" in regression_implementation:
-                    reggen.task_b_manual(x, y, z, alpha, deg=deg,
-                                           test_percent=test_percent)
+                    ridge = reggen.ManualRidge(x, y, z, alpha, deg=deg,
+                                               test_percent=test_percent,
+                                               print_results=print_results)
 
                 if "sklearn" in regression_implementation:
-                    reggen.task_b_sk_learn(x, y, z, alpha, deg=deg,
-                                             test_percent=test_percent)
+                    sk_ridge = reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
+                                                   test_percent=test_percent,
+                                                   print_results=print_results)
 
     if "lasso" in regression_methods:
         print("\nLasso Regression")
@@ -232,8 +298,9 @@ def franke_func_tasks():
                 #                   test_percent=test_percent)
 
                 if "sklearn" in regression_implementation:
-                    reggen.task_c_sk_learn(x, y, z, alpha, deg=deg,
-                                             test_percent=test_percent)
+                    sk_lasso = reggen.SKLearnLasso(x, y, z, alpha, deg=deg,
+                                                   test_percent=test_percent,
+                                                   print_results=print_results)
 
 
 if __name__ == '__main__':
