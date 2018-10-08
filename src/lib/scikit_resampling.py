@@ -70,6 +70,7 @@ def sk_learn_k_fold_cv(x, y, z, kf_reg, design_matrix, k_splits=4,
             "bias": bias,
             "beta_coefs": beta_coefs,
             "beta_coefs_var": beta_coefs_var,
+            "beta_95c": np.sqrt(beta_coefs_var)*2,
             "diff": abs(MSE - bias - var),
         }
 
@@ -186,6 +187,7 @@ def sk_learn_bootstrap(x, y, z, design_matrix, kf_reg, N_bs=100,
             "bias": bias,
             "beta_coefs": beta_coefs,
             "beta_coefs_var": beta_coefs_var,
+            "beta_95c": np.sqrt(beta_coefs_var)*2,
             "diff": abs(MSE - bias - var),
         }
 

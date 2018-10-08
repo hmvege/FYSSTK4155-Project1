@@ -45,6 +45,7 @@ class _dataStorer:
             "bias": bias,
             "beta_coefs": beta,
             "beta_coefs_var": beta_var,
+            "beta_95c": np.sqrt(coef_var)*2,
         }
 
     def _fill_data(self, bs_reg, method):
@@ -56,8 +57,12 @@ class _dataStorer:
             "bias": bs_reg.bias,
             "beta_coefs": bs_reg.coef_,
             "beta_coefs_var": bs_reg.coef_var,
+            "beta_95c": np.sqrt(bs_reg.coef_var)*2,
             "diff": abs(bs_reg.bias + bs_reg.var - bs_reg.MSE),
         }
+
+    def get_data(self):
+        return self.data
 
 class ManualOLS(_dataStorer):
     def __init__(self, x, y, z, deg=1, N_bs=100, N_cv_bs=100, k_splits=4,
@@ -87,6 +92,7 @@ class ManualOLS(_dataStorer):
             "bias": metrics.bias2(z.ravel(), z_predict_),
             "beta_coefs": linreg.coef_,
             "beta_coefs_var": linreg.coef_var,
+            "beta_95c": np.sqrt(linreg.coef_var)*2,
         }
 
         # Resampling with k-fold cross validation
@@ -181,7 +187,7 @@ class SKLearnOLS(_dataStorer):
         mse_error = metrics.mse(z.ravel(), z_predict_)
 
         N, P = X.shape
-        z_variance = np.sum((z.ravel() - z_predict)**2) / (N - P - 1)
+        z_variance = np.sum((z.ravel() - z_predict_)**2) / (N - P - 1)
 
         linreg_coef_var = np.diag(np.linalg.inv(X.T @ X))*z_variance
         self.data["regression"] = {
@@ -191,6 +197,7 @@ class SKLearnOLS(_dataStorer):
             "bias": bias,
             "beta_coefs": linreg.coef_,
             "beta_coefs_var": linreg_coef_var,
+            "beta_95c": np.sqrt(linreg_coef_var)*2,
         }
 
         # Resampling coefs
@@ -260,6 +267,7 @@ class ManualRidge(_dataStorer):
             "bias": bias,
             "beta_coefs": linreg.coef_,
             "beta_coefs_var": linreg_coef_var,
+            "beta_95c": np.sqrt(linreg_coef_var)*2,
         }
         if print_results:
             print("R2:  {:-20.16f}".format(r2))
@@ -362,6 +370,7 @@ class SKLearnRidge(_dataStorer):
             "bias": bias,
             "beta_coefs": ridge.coef_,
             "beta_coefs_var": beta_variance,
+            "beta_95c": np.sqrt(beta_variance)*2,
         }
 
         if print_results:

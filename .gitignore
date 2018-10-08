@@ -20,3 +20,4 @@ latexrun
 __pycache__
 *.pyc
 *.bib
+*.pickle
