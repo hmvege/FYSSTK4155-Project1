@@ -7,6 +7,7 @@ import collections
 import os
 import pickle
 import time
+import copy as cp
 
 import lib.regression as libreg
 import lib.metrics as metrics
@@ -20,33 +21,9 @@ import imageio
 
 
 def main():
-    t1 = time.clock()
     franke_func_tasks()
 
-    # franke_func_analysis()
-    # real_data_analysis()
-
-    t2 = time.clock()
-
-    time_used = t2-t1    
-    print("\n")
-    print ("*"*100)
-    print ("Time used on Franke function regression: {:.10f} secs/ "
-        "{:.10f} minutes".format(time_used, time_used/60.))
-    print ("*"*100)
-
-    t3 = time.clock()
-
     real_data()
-
-    t4 = time.clock()
-
-    time_used = t4-t3
-    print("\n")
-    print ("*"*100)
-    print ("Time used on Terrain data regression: {:.10f} secs/ "
-        "{:.10f} minutes".format(time_used, time_used/60.))
-    print ("*"*100)
 
 
 def surface_plot(surface, title):
@@ -65,6 +42,8 @@ def surface_plot(surface, title):
 
 def real_data():
     """Part d)-e)."""
+
+    t3 = time.clock()
 
     # Loads data
     folder_path = "../../MachineLearning/doc/Projects/2018/Project1/DataFiles/"
@@ -113,55 +92,67 @@ def real_data():
     N_cv_bs = 100
     k_splits = 4
     test_percent = 0.4
+    print_results = False
 
     noise_sigma_values = np.linspace(0, 0.5, 15)
-    polynom_degrees = [1,2,3,4,5]
+    polynom_degrees = [1, 2, 3, 4, 5]
     alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]
 
     np.random.seed(1234)
 
     regression_methods = []
     regression_methods += ["ols"]
-    # regression_methods += ["ridge"]
-    # regression_methods += ["lasso"]
+    regression_methods += ["ridge"]
+    regression_methods += ["lasso"]
 
     regression_implementation = []
-    # regression_implementation += ["sklearn"]
+    regression_implementation += ["sklearn"]
     regression_implementation += ["manual"]
 
     data = run_regrssion_methods(regression_methods, polynom_degrees,
                                  regression_implementation,
-                                 x, y, z, N_bs_resampling, N_cv_bs, 
-                                 test_percent, alpha_values, print_results, 
+                                 x, y, z, N_bs_resampling, N_cv_bs,
+                                 test_percent, alpha_values, print_results,
                                  noise_sigma_values)
 
-    with open("real_data.pickle", "wb") as f:
+    pickle_fname = "real_data.pickle"
+    with open(pickle_fname, "wb") as f:
         pickle.dump(data, f)
-        print("Data pickled and dumped to: real_data.pickle")
-    
+        print("Data pickled and dumped to: {:s}".format(pickle_fname))
+
+    t4 = time.clock()
+
+    time_used = t4-t3
+    print("\n")
+    print("*"*100)
+    print("Time used on Terrain data regression: {:.10f} secs/ "
+          "{:.10f} minutes".format(time_used, time_used/60.))
+    print("*"*100)
+
 
 def franke_func_tasks():
     """Part a)-c)."""
 
+    t1 = time.clock()
+
     # Generates data
-    N_data_points = 150  # 150
+    N_data_points = 100  # 150
     x = np.sort(np.random.uniform(0, 1, N_data_points))
     y = np.sort(np.random.uniform(0, 1, N_data_points))
 
     # Analysis constants
-    N_bs_resampling = 1000  # 1000
+    N_bs_resampling = 200  # 1000
     N_cv_bs = 100
     k_splits = 4
     test_percent = 0.4
     print_results = False
 
-    noise_sigma_values = np.linspace(0, 0.5, 10)
+    noise_sigma_values = np.linspace(0, 1.0, 8)
     noise_mu = 0
-    polynom_degrees = [1,2,3,4,5]
-    alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]
+    polynom_degrees = [1, 2, 3, 4, 5]
+    alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3]
 
     np.random.seed(1234)
-
 
     regression_methods = []
     regression_methods += ["ols"]
@@ -180,14 +171,25 @@ def franke_func_tasks():
 
     data = run_regrssion_methods(regression_methods, polynom_degrees,
                                  regression_implementation,
-                                 x, y, z, N_bs_resampling, N_cv_bs, 
-                                 test_percent, alpha_values, print_results, 
+                                 x, y, z, N_bs_resampling, N_cv_bs,
+                                 test_percent, alpha_values, print_results,
                                  noise_sigma_values)
 
-    with open("franke_func.pickle", "wb") as f:
+    pickle_fname = "franke_func_ols_final.pickle"
+    with open(pickle_fname, "wb") as f:
         pickle.dump(data, f)
-        print("Data pickled and dumped to: franke_func.pickle")
-    
+        print("Data pickled and dumped to: {:s}".format(pickle_fname))
+
+    t2 = time.clock()
+
+    time_used = t2-t1
+    print("\n")
+    print("*"*100)
+    print("Time used on Franke function regression: {:.10f} secs/ "
+          "{:.10f} minutes".format(time_used, time_used/60.))
+    print("*"*100)
+
+    t3 = time.clock()
 
 
 def run_regrssion_methods(regression_methods, polynom_degrees,
@@ -203,33 +205,37 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
         for degree in polynom_degrees:
             print("\n**** Polynom degree: {} ****".format(degree))
 
-            if "manual" in regression_implementation:
-                ols = reggen.ManualOLS(x, y, z, deg=degree,
-                                       N_bs=N_bs_resampling,
-                                       N_cv_bs=N_cv_bs,
-                                       test_percent=test_percent,
-                                       print_results=print_results)
-
-                data.append({
-                    "reg_type": "ols",
-                    "degree": degree,
-                    "method": "manual",
-                    "data": ols.data,
-                })
-
-            if "sklearn" in regression_implementation:
-                sk_ols = reggen.SKLearnOLS(x, y, z, deg=degree,
+            for noise in noise_sigma_values:
+                z += np.random.normal(0, noise, size=z.shape)
+                if "manual" in regression_implementation:
+                    ols = reggen.ManualOLS(x, y, z, deg=degree,
                                            N_bs=N_bs_resampling,
                                            N_cv_bs=N_cv_bs,
                                            test_percent=test_percent,
                                            print_results=print_results)
 
-                data.append({
-                    "reg_type": "ols",
-                    "degree": degree,
-                    "method": "sklearn",
-                    "data": sk_ols.data,
-                })
+                    data.append({
+                        "reg_type": "ols",
+                        "degree": degree,
+                        "noise": noise,
+                        "method": "manual",
+                        "data": cp.deepcopy(ols.data),
+                    })
+
+                if "sklearn" in regression_implementation:
+                    sk_ols = reggen.SKLearnOLS(x, y, z, deg=degree,
+                                               N_bs=N_bs_resampling,
+                                               N_cv_bs=N_cv_bs,
+                                               test_percent=test_percent,
+                                               print_results=print_results)
+
+                    data.append({
+                        "reg_type": "ols",
+                        "degree": degree,
+                        "noise": noise,
+                        "method": "sklearn",
+                        "data": cp.deepcopy(sk_ols.data),
+                    })
 
     if "ridge" in regression_methods:
         print("\nRidge Regression")
@@ -252,7 +258,7 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                             "noise": noise,
                             "alpha": alpha,
                             "method": "manual",
-                            "data": ridge.data,
+                            "data": cp.deepcopy(ridge.data),
                         })
 
                     if "sklearn" in regression_implementation:
@@ -267,9 +273,8 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                             "noise": noise,
                             "alpha": alpha,
                             "method": "sklearn",
-                            "data": sk_ridge.data,
+                            "data": cp.deepcopy(sk_ridge.data),
                         })
-
 
     if "lasso" in regression_methods:
         print("\nLasso Regression")
@@ -296,7 +301,7 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                             "noise": noise,
                             "alpha": alpha,
                             "method": "sklearn",
-                            "data": sk_lasso.data,
+                            "data": cp.deepcopy(sk_lasso.data),
                         })
 
     return data

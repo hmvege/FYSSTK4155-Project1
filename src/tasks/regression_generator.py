@@ -48,17 +48,18 @@ class _dataStorer:
             "beta_95c": np.sqrt(coef_var)*2,
         }
 
-    def _fill_data(self, bs_reg, method):
+    def _fill_data(self, reg, method):
         self.data[method] = {
-            "y_pred": bs_reg.y_pred,
-            "y_pred_var": bs_reg.y_pred_var,
-            "mse": bs_reg.MSE,
-            "r2": bs_reg.R2,
-            "bias": bs_reg.bias,
-            "beta_coefs": bs_reg.coef_,
-            "beta_coefs_var": bs_reg.coef_var,
-            "beta_95c": np.sqrt(bs_reg.coef_var)*2,
-            "diff": abs(bs_reg.bias + bs_reg.var - bs_reg.MSE),
+            "y_pred": reg.y_pred,
+            "y_pred_var": reg.y_pred_var,
+            "mse": reg.MSE,
+            "r2": reg.R2,
+            "var": reg.var,
+            "bias": reg.bias,
+            "beta_coefs": reg.coef_,
+            "beta_coefs_var": reg.coef_var,
+            "beta_95c": np.sqrt(reg.coef_var)*2,
+            "diff": abs(reg.bias + reg.var - reg.MSE),
         }
 
     def get_data(self):
