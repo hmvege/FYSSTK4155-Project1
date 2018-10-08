@@ -181,8 +181,9 @@ class OLSRegression(__RegBackend):
         # Residues.
         self.eps = self.y_train - self.y_approx
 
-        # Variance of y approximate values. sigma^2
-        self.y_variance = np.sum(self.eps**2) / float(self.N)
+        # Variance of y approximate values. sigma^2, unbiased
+        # self.y_variance = np.sum(self.eps**2) / float(self.N)
+        self.y_variance = np.sum(self.eps**2) / (self.N - self.P - 1)
 
         # Beta fit covariance/variance. (X^T * X)^{-1} * sigma^2
         self.coef_cov = self.XTX_inv * self.y_variance
@@ -238,8 +239,9 @@ class RidgeRegression(__RegBackend):
         # Residues.
         self.eps = self.y_train - self.y_approx
 
-        # Variance of y approximate values. sigma^2
-        self.y_variance = metrics.mse(self.y_train, self.y_approx)
+        # Variance of y approximate values. sigma^2, unbiased
+        # self.y_variance = metrics.mse(self.y_train, self.y_approx)
+        self.y_variance = np.sum(self.eps**2) / (self.N - self.P - 1)
 
         # Beta fit covariance/variance.
         # See page 10 section 1.4 in https://arxiv.org/pdf/1509.09169.pdf

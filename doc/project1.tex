@@ -290,11 +290,16 @@ The Cross Validation(CV) is a resampling technique which is similar in thought t
 The Cross Validation comes in many different flavors. Among popular ones are the Monte-Carlo Cross Validation(MCCV). The idea is the same, except that we randomly select the $i_k$'th set to leave out and run this $N_{MC}$ times instead of just $k$ times. The samples selected each time are selected without replacement, but one can have the same samples over many Monte Carlo iterations. E.g. the indices of the first set can be $12, 32, 56, \bm{42}, 94, 83$, and $49, 2, 59, \bm{42}, 51, 73$, where $\bm{42}$ repeats.
 
 \section{Implementation}
-The full implementation can be found at \cite{github-repo}. The OLS and Ridge regressions have been implemented, as well as the resampling methods Bootstrap, $k$-fold CV and MCCV. Taking the inverse in order to find the inverse in OLS regression \eqref{eq:ols_beta_solution} and the inverse in Ridge regression \eqref{eq:ridge-inverse-replacement} were 
+The full implementation can be found at \cite{github-repo}. The OLS and Ridge regressions have been implemented, as well as the resampling methods Bootstrap, $k$-fold CV and MCCV. When taking the inverse in OLS regression \eqref{eq:ols_beta_solution} and the inverse in Ridge regression \eqref{eq:ridge-inverse-replacement} in order to find the $\beta$ coefficients a Singular Value Decomposition were used. 
 
 Using scikit-learn\cite{scikit-learn} methods for OLS, Ridge and Lasso regression were implemented, as well as $k$-fold cross validation.
 
 \section{Results}
+The results presented are split in two section: the results governing method verification using the Franke function\eqref{eq:franke_function} and methods modeling terrain data as retrieved from \texttt{https://earthexplorer.usgs.gov/}.
+
+\subsection{Verification through the Franke function}
+
+
 \section{Discussion and conclusion}
 
 \section{Appendix} \label{sec:appendix}

@@ -179,7 +179,11 @@ class SKLearnOLS(_dataStorer):
         r2 = metrics.R2(z.ravel(), z_predict_)
         bias = metrics.bias2(z.ravel(), z_predict_)
         mse_error = metrics.mse(z.ravel(), z_predict_)
-        linreg_coef_var = np.diag(np.linalg.inv(X.T @ X))*mse_error
+
+        N, P = X.shape
+        z_variance = np.sum((z.ravel() - z_predict)**2) / (N - P - 1)
+
+        linreg_coef_var = np.diag(np.linalg.inv(X.T @ X))*z_variance
         self.data["regression"] = {
             "y_pred": z_predict_,
             "r2": r2,
@@ -343,9 +347,12 @@ class SKLearnRidge(_dataStorer):
         mse = metrics.mse(z.ravel(), z_predict)
         bias = metrics.bias2(z.ravel(), z_predict)
 
+        N, P = X.shape
+        z_variance = np.sum((z.ravel() - z_predict)**2) / (N - P - 1)
+
         # Gets the beta variance
         beta_variance = metrics.ridge_regression_variance(
-            X, mse, alpha)
+            X, z_variance, alpha)
 
         self.data["alpha"] = alpha
         self.data["regression"] = {

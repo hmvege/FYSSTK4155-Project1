@@ -123,7 +123,7 @@ def franke_func_tasks():
     test_percent = 0.4
     print_results = True
 
-    noise_sigma = 0.1
+    noise_sigma = [1e-2, 1e-1, 0.5, 1.0, 2]
     noise_mu = 0
     polynom_degrees = [5]
     alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]
@@ -145,7 +145,9 @@ def franke_func_tasks():
     x, y = np.meshgrid(x, y)
     z = ff_tools.FrankeFunction(x, y)
 
-    np.save("surface_plotter/data", np.c_[x, y, z])
+    # Stores data for plotting
+    np.save("_various_scripts/data", np.c_[x, y, z])
+
     run_regrssion_methods(regression_methods, polynom_degrees,
                           regression_implementation,
                           x, y, z, N_bs_resampling, N_cv_bs, test_percent,
