@@ -7,7 +7,11 @@
 % For figures and graphics'n stuff
 \usepackage{graphicx}
 \usepackage{caption}
+
+% \usepackage{subfigure}
 \usepackage{subcaption}
+
+
 \usepackage{url}
 \usepackage{color}
 \usepackage{float}
@@ -16,9 +20,18 @@
 \usepackage{enumerate}
 \usepackage{bm}
 
+
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
+
 % Correct way for typing C++
 \newcommand{\CC}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
 \def\CC{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
+
+% Remembrance 
+\newcommand{\husk}[1]{\color{red}#1\color{black}}
 
 % For cmd line arguments
 \usepackage{listings}
@@ -71,7 +84,7 @@ One common way to investigate the efficacy of a model is to use the Franke funct
 Let us start of by summing up notational conventions. We will denote a \textit{case} or \textit{sample} by $x_i$, where $i=0,\cdots,n$. This will have a corresponding \textit{response} or \textit{outcome} $y_i = f(x_i)$. We typically want to estimate $f$ by some approximate function $\tilde{f}$. As we shall see, one method is by performing linear regression.
 
 \subsection{Linear regression}
-As mentioned, linear regression is a method of performing a fit of parameters $x_i$ to a given data set $y_i$. From this we wish to minimize the error between the \textit{response} or real data points $y_i$, and some approximation $\tilde{y}_i=\tilde{f}(x_i)$. This defines our loss function, which we will seek to minimize. In linear regression this will be by building an \textit{design matrix} built from $p$ \textit{explanatory variables} or \textit{predictors} $\bm{x_i}=x_i^0+x_i^1+\dots+x_i^p$. The explanatory variables is simply the degrees of the polynomial we seek to approximate $f$ by. So far, we have not mentioned the variables which will be tuned to the model, the \textit{regression parameters} $\beta=(\beta_1,\dots,\beta_p)^T$. The keen-eyed reader will now notice that the predictors and regression parameters all are of equal number, and may have guessed that they form our linear approximation - this is true:
+As mentioned, linear regression is a method of performing a fit of parameters $x_i$ to a given data set $y_i$. From this we wish to minimize the error between the \textit{response} or \textit{real} data points $y_i$, and some approximation $\tilde{y}_i=\tilde{f}(x_i)$. This defines our loss function, which we will seek to minimize. In linear regression this will be by building an \textit{design matrix} built from $p$ \textit{explanatory variables} or \textit{predictors} $\bm{x_i}=x_i^0+x_i^1+\dots+x_i^p$. The explanatory variables is simply the degrees of the polynomial we seek to approximate $f$ by. So far, we have not mentioned the variables which will be tuned to the model, the \textit{regression parameters} $\beta=(\beta_1,\dots,\beta_p)^T$. The keen-eyed reader will now notice that the predictors and regression parameters all are of equal number, and may have guessed that they form our linear approximation - this is true:
 \begin{align*}
     \tilde{y}_i = \beta_0 x_{i0} + \beta_1 x_{i1} + \dots + \beta_p x_{ip} + \epsilon_i
 \end{align*}
@@ -89,6 +102,7 @@ To begin our journey towards a solution of OLS, we start by defining the \textit
 \begin{align}
     \underset{\beta\in \mathbb{R}^{p}}{\text{min}}||\bm{X}\beta - \bm{y}||^2_2 = 
     \underset{\beta\in \mathbb{R}^{p}}{\text{min}}\sum^n_{i=1}\left(\bm{x}^T_i\beta - y_i\right)^2
+    \label{eq:ols_constraint}
 \end{align}
 We see that the goal is to minimize the L$_2$ norm between the response $y_i$ and the fitted predictors $\bm{x}_i^T\beta$ \citep[ch. 4, p. 21]{2018arXiv180308823M}.
 
@@ -107,9 +121,16 @@ But, before we can do that we need to define what the optimal $\beta$ vector is.
 which is the matrix equation
 \begin{align}
     Q(\beta) = (\bm{y} - \bm{X}\beta)^T (\bm{y} - \bm{X}\beta)
-    \label{eq:ols_minimization_function}
+    \label{eq:ols_cost_function}
 \end{align}
-This equation is called the \text{cost function}\citep[p. 12]{2018arXiv180308823M}. The minimum of this function can be found by differentiating by $\beta$ and setting the result equal to zero. 
+This equation is called the \text{cost function}\citep[p. 12]{2018arXiv180308823M}. Before moving on, we should not that we can generalize it to
+\begin{align}
+    Q(\bm{y}, g(\bm{x})) = \sum_i \left(y_i - g(\bm{x}) \right)
+    \label{eq:reg_cost_func}
+\end{align}
+where $g(\bm{x})$ is some function for the predictor. In OLS, this is $\beta_i \bm{x}_i$.
+
+The minimum of the cost function \eqref{eq:ols_cost_function} can be found by differentiating by $\beta$ and setting the result equal to zero. 
 \begin{align*}
     \frac{\partial Q(\beta)}{\partial\beta_j} &= \frac{\partial}{\partial\beta_j}\sum^{n-1}_{i=0} (y_i - \beta_0 x_{i0} - \beta_1 x_{i1} - \dots \beta_{p-1} x_{i,p-1})^2 \\
     &= -2\sum^{n-1}_{i=0} x_{ij}(y_i - \beta_0 x_{i0} - \beta_1 x_{i1} - \dots \beta_{p-1} x_{i,p-1}) \\
@@ -124,7 +145,7 @@ which we require to be zero in order to find an optimal $\beta$. From this the \
     \bm{\epsilon} = \bm{y} - \tilde{\bm{y}} = \bm{y} - \bm{X}\beta
     \label{eq:ols_residues}
 \end{align}
-The solution should now be obvious. We need to solve equation \eqref{eq:ols_minimization} for $Q(\beta)=0$,
+The residues is the error between the \textit{approximation} and the \textit{real} data, and is not to be confused with the inherent error in the data. The solution should now be obvious. We need to solve equation \eqref{eq:ols_minimization} for $Q(\beta)=0$,
 \begin{align*}
     \bm{X}^T (\bm{y} - \bm{X}\beta) = 0.
 \end{align*}
@@ -135,28 +156,144 @@ As alluded to in \eqref{eq:matrix_eq_solution}, we now need to multiply by the i
 And thus, the $\beta$-values is simply
 \begin{align}
     \beta = \left(\bm{X}^T\bm{X}\right)^{-1}\left(\bm{X}^T\bm{X}\right)\bm{y}
-    \label{eq:ols_beta}
+    \label{eq:ols_beta_solution}
 \end{align}
 This solution does not account for errors in the measurements or responses. Say there is an $\sigma_i$ associated with each measured $y_i$, we will have to use the $\chi^2$ function as a our function to minimize\citep[see notes on regression]{morten-regression}. We will have to rescale our solution by $\bm{X} \rightarrow \bm{A}=\bm{X}/\bm{\Sigma}$ where $\Sigma$ is a diagonal matrix of every uncertainty $\sigma_i$.
 
 \subsubsection{Ridge regression}
+The idea of Ridge regression is to add a small term $\lambda$ to constraint,
+\begin{align}
+    \beta(\lambda) = \underset{\beta\in \mathbb{R}^{p}}{\text{min}}(||\bm{X}\beta - \bm{y}||^2_2 + \lambda||\beta||^2_2)
+    \label{eq:ridge_constraint}
+\end{align}
+This amounts to finding a solution in parameters space $\beta$ which tangents a circle defined by the L$^2$ norm of the constraint \eqref{eq:ridge_constraint}.
+
+As shown in \cite{van2015lecture}, the solution to the Ridge regression, is to replace the inverse in the OLS solution for $\beta$ \eqref{eq:ols_beta_solution}, by
+\begin{align}
+    \bm{X}^T\bm{X} \rightarrow \bm{X}^T\bm{X} + \lambda \bm{I}
+    \label{eq:ridge-inverse-replacement}
+\end{align}
+with $\bm{I}$ as the identity matrix.
+
+The idea of adding an $\lambda\bm{I}$ can aid in resolving issues surrounding singularities in the inverse which can be troublesome when dealing with a large parameter space $\beta$\cite[see notes on regression, p. 17]{morten-regression}.
+
 \subsubsection{Lasso regression}
+The idea behind the Lasso regression is similar to that of Ridge regression. However, it comes with a few of its own benefits, such that it tends to zero out $\beta$ coefficients. To see this, we can take a look at the constraint function,
+\begin{align}
+    \beta(\lambda) = \underset{\beta\in \mathbb{R}^{p}}{\text{min}}(||\bm{X}\beta - \bm{y}||^2_2 + \lambda||\beta||^2_1)
+    \label{eq:ridge_constraint}
+\end{align}
+where we are taking the L$^1$ norm(popularly called Taxicab or Manhattan norm) in the $\lambda$ term, $\lambda||\beta||^2_1$. Since the L$^1$ norm is defined as
+\begin{align*}
+    ||\bm{a}||_1 = |a_0| + \dots + |a_{n-1}| = \sum^{n-1}_{i=0}|a_i|
+\end{align*}
+To visualize and better understand the difference between Ridge and Lasso regression, we can take a look at figure \ref{fig:norms}. Here we see the difference to be that the Ridge will tend to get more $\beta_i$ values as zero, due to the L$^1$ norm having a greater chance of \textit{"hitting"} the corners of the diamond in figure \ref{fig:l1_norm}.
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/l1_norm.pdf}
+        \caption{L$^1$ norm for Lasso.}
+        \label{fig:l1_norm}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/l2_norm.pdf}
+        \caption{L$^2$ norm for Ridge.}
+        \label{fig:l2_norm}
+    \end{subfigure}
+    \caption{In the figure \ref{fig:l2_norm} we see how the search space for the Ridge regression, where we define a success when the $\beta$ parameter hits the circle. The search space for Lasso is viewed on the figure to the right \ref{fig:l1_norm}.}
+    \label{fig:norms}
+\end{figure}
+
 
 \subsection{The Bias-Variance decomposition}
-It is possible to define variance of the predicted values $\tilde{y}$. If we take the estimator of our cost function,
+It is possible to define variance of the predicted values $\tilde{y}$. If we take the estimator of the general cost function for linear regression \eqref{eq:reg_cost_func},
+\begin{align*}
+    E[Q(g(\bm{x}))] = E\left[\sum_i (y_i - g(\bm{x_i}))^2 \right]
+\end{align*}
+it can be shown that we can decompose this into the the variance of $\bm{y}$, bias and noise\cite{2018arXiv180308823M,morten-regression}.
 \begin{align}
-    E[Q(\beta)] = E\left[\right]
+    \text{MSE} = \text{Bias}^2 + \text{Var} + \text{Noise}
+    \label{eq:bias-variance}
 \end{align}
+The bias is defined as
+\begin{align}
+    \mathrm{Bias}^2 = \sum_i (\tilde{y}_i - E[\bm{y}])^2,
+    \label{eq:bias}
+\end{align}
+which is measure of how much the prediction deviates from the real data.
+
+A note on the Noise is needed here before we move on. The noise is defined as the the variance in the real data, $\text{Noise}=\text{Var}(\epsilon_\mathrm{noise})$. Since we cannot know the noise beforehand, this will be gobbled up into the bias, as that is a measure of the deviation in real data and prediction. Since the noise is irreducible in the sense we cannot remove the initial noise in the data, the MSE will never lie below $\text{Var}(\epsilon)$\citep[ch. 2, p. 34]{james2013introduction}.
+
+The variance in \eqref{eq:bias-variance} is defined as the variance in in the prediction, $\tilde{\bm{y}}$.
+
+The MSE in \eqref{eq:bias-variance} is the Mean Square Error is defined as,
+\begin{align}
+    \text{MSE} = \frac{1}{n} \sum^{n-1}_{i=0}(y_i - \tilde{y}_i)^2,
+    \label{eq:mse}
+\end{align}
+and is simply the averaged squared errors.
 
 % \subsection{Mean Square Error(MSE)}
 % The mean square error, popularly called MSE is a function that 
 \subsection{\texorpdfstring{$R^2$}{R1} score}
+A assessment of the fit quality is given by the $R^2$ score,
+\begin{align}
+    R^2(\bm{y},\tilde{\bm{y}}) = 1 - \frac{\sum_{i=0}^{n-1}(y_i - \tilde{y}_i)^2}{\sum_{i=0}^{n-1}(y_i - \bar{\bm{y}})^2}
+    \label{eq:r2_score}
+\end{align}
+with $\bar{\bm{y}}$ defined as 
+\begin{align*}
+    \bar{\bm{y}} = \frac{1}{n}\sum^{n-1}_{i=0} y_i
+\end{align*}
+
+
 
 \subsection{Bootstrapping}
+Bootstrapping is a resampling technique particularly useful for small datasets or observables with difficult-to-asses statistics\cite{efron1994introduction}. The bootstrap technique is inspired by the Jackknife method\cite{efron1981}, but differs since we randomly selects a $n$ new samples with replacement of the original dataset $\{y_i\}$ a total of $N_\mathrm{bs}$ times. We use the $N_\mathrm{bs}$ samples to find the MSE, variance and bias. 
+
+A basic for bootstrap algorithm can be set up as following,
+\begin{algorithm}[H]
+    \caption{Bootstrap}
+    \label{alg:bootstrap}
+    \begin{algorithmic}[1]
+        \State Split the dataset $\bm{X}_{\mathcal{L}}=\{y_i,\bm{x}_i\}$ into a training set and a test set(or holdout set), $\bm{X}_{\mathcal{L},\mathrm{train}}$ and $\bm{X}_{\mathcal{L},\mathrm{test}}$.
+        \For{$N_\mathrm{bs}$ times}
+            \State Build a new data set $\bm{X}_{\mathcal{L},\mathrm{bs}}=\{y_{i,\mathrm{bs}},\bm{x}_{i,\mathrm{bs}}\}$ with $n$ randomly drawn with replacement values, from the training set $\bm{X}_{\mathcal{L},\mathrm{train}}$.
+            \State Fit the bootstrapped dataset to a given model.
+            \State Evaluate the model on on the test set $\bm{X}_{\mathcal{L},\mathrm{test}}$.
+            \State Store relevant results.
+        \EndFor
+        \State Perform final statistics on either the collection of bootstrapped datasets and/or take the averages on the stored results. Depending on the type of variable you are sampling, you might need to use latter one.
+    \end{algorithmic}
+\end{algorithm}
+
 \subsection{\texorpdfstring{$k$}{k}-fold Cross Validation}
+The Cross Validation(CV) is a resampling technique which is similar in thought to the Jackknife method, but differs at a few critical places. Details on the $k$-fold CV method can be found in the book An Introduction to Statistical learning by \citet[ch. 5.1]{james2013introduction}, and can be summarized as following,
+\begin{algorithm}[H]
+    \caption{$k$-fold Cross Validation}
+    \label{alg:kfcv}
+    \begin{algorithmic}[1]
+        \State Shuffle the dataset $\bm{X}_\mathcal{L}=\{y_i,\bm{x}_i\}$.
+        \State Split the data set into training and test data, $\bm{X}_{\mathcal{L},\mathrm{train}}$ and $\bm{X}_{\mathcal{L},\mathrm{test}}$.
+        \State Split the training data into $k$ \textit{folds}. $\bm{X}_{\mathcal{L},\mathrm{train}}\rightarrow \{\bm{X}_{\mathcal{L},i_k}\}$
+        \For{each $i_k$ in the $k$ folds}
+            \State Select the sets $\tilde{\bm{X}}_{\mathcal{L}} = \bm{X}_{\mathcal{L}} / \{\bm{X}_{\mathcal{L},i_k}\}$ as training sets, excluding the $k$'th set which is used a holdout set. Note: in order to evaluate the Bias-Variance score \eqref{eq:bias-variance}, the model will not be compared on the $i_k$ test set.
+            \State Fit the $\tilde{\bm{X}}_{\mathcal{L}}$ to the model which is being used.
+            \State Evaluate the $\tilde{\bm{X}}_{\mathcal{L}}$ on the test set $\bm{X}_{\mathcal{L},\mathrm{test}}$, and perform necessary statistics.
+        \EndFor
+        \State Summarize the evaluations and statistics gained from the $k$ folds.
+    \end{algorithmic}
+\end{algorithm}
+
+The Cross Validation comes in many different flavors. Among popular ones are the Monte-Carlo Cross Validation(MCCV). The idea is the same, except that we randomly select the $i_k$'th set to leave out and run this $N_{MC}$ times instead of just $k$ times. The samples selected each time are selected without replacement, but one can have the same samples over many Monte Carlo iterations. E.g. the indices of the first set can be $12, 32, 56, \bm{42}, 94, 83$, and $49, 2, 59, \bm{42}, 51, 73$, where $\bm{42}$ repeats.
 
 \section{Implementation}
-\cite{scikit-learn}
+The full implementation can be found at \cite{github-repo}. The OLS and Ridge regressions have been implemented, as well as the resampling methods Bootstrap, $k$-fold CV and MCCV. Taking the inverse in order to find the inverse in OLS regression \eqref{eq:ols_beta_solution} and the inverse in Ridge regression \eqref{eq:ridge-inverse-replacement} were 
+
+Using scikit-learn\cite{scikit-learn} methods for OLS, Ridge and Lasso regression were implemented, as well as $k$-fold cross validation.
+
 \section{Results}
 \section{Discussion and conclusion}
 
