@@ -123,7 +123,7 @@ def franke_func_tasks():
     test_percent = 0.4
     print_results = True
 
-    noise_sigma = [1e-2, 1e-1, 0.5, 1.0, 2]
+    noise_sigma = [1e-2, 1e-1, 0.5, 1.0, ]
     noise_mu = 0
     polynom_degrees = [5]
     alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]

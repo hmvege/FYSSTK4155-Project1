@@ -54,7 +54,7 @@
 
 % For proper citations
 % \usepackage[round, authoryear]{natbib}
-\usepackage[numbers, authoryear]{natbib} 
+\usepackage[numbers]{natbib} 
 
 % For color
 \hypersetup{colorlinks=true,linkcolor=blue, linktocpage}
@@ -95,7 +95,7 @@ From this, we get a neat matrix equation,
 \end{align}
 We see that our goal has immediately become to minimize $\beta$. The definition of the error vector $\bm{\epsilon}$ will be given later.
 
-The simplest case of such a linear regression minimization problem is just a simple line\citep[ch. 3.1, p. 61]{james2013introduction}. However, this can be generalized greatly and we end up with the standard go-to method called \textit{Ordinary Least Squares}.
+The simplest case of such a linear regression minimization problem is just a simple line \citep[ch. 3.1, p. 61]{james2013introduction}. However, this can be generalized greatly and we end up with the standard go-to method called \textit{Ordinary Least Squares}.
 
 \subsubsection{Ordinary Least Squares regression(OLS)}
 To begin our journey towards a solution of OLS, we start by defining the \textit{loss function} for OLS. 
@@ -123,7 +123,7 @@ which is the matrix equation
     Q(\beta) = (\bm{y} - \bm{X}\beta)^T (\bm{y} - \bm{X}\beta)
     \label{eq:ols_cost_function}
 \end{align}
-This equation is called the \text{cost function}\citep[p. 12]{2018arXiv180308823M}. Before moving on, we should not that we can generalize it to
+This equation is called the \text{cost function} \citep[p. 12]{2018arXiv180308823M}. Before moving on, we should not that we can generalize it to
 \begin{align}
     Q(\bm{y}, g(\bm{x})) = \sum_i \left(y_i - g(\bm{x}) \right)
     \label{eq:reg_cost_func}
@@ -158,7 +158,7 @@ And thus, the $\beta$-values is simply
     \beta = \left(\bm{X}^T\bm{X}\right)^{-1}\left(\bm{X}^T\bm{X}\right)\bm{y}
     \label{eq:ols_beta_solution}
 \end{align}
-This solution does not account for errors in the measurements or responses. Say there is an $\sigma_i$ associated with each measured $y_i$, we will have to use the $\chi^2$ function as a our function to minimize\citep[see notes on regression]{morten-regression}. We will have to rescale our solution by $\bm{X} \rightarrow \bm{A}=\bm{X}/\bm{\Sigma}$ where $\Sigma$ is a diagonal matrix of every uncertainty $\sigma_i$.
+This solution does not account for errors in the measurements or responses. Say there is an $\sigma_i$ associated with each measured $y_i$, we will have to use the $\chi^2$ function as a our function to minimize \citep[see notes on regression]{morten-regression}. We will have to rescale our solution by $\bm{X} \rightarrow \bm{A}=\bm{X}/\bm{\Sigma}$ where $\Sigma$ is a diagonal matrix of every uncertainty $\sigma_i$.
 
 \subsubsection{Ridge regression}
 The idea of Ridge regression is to add a small term $\lambda$ to constraint,
@@ -181,7 +181,7 @@ The idea of adding an $\lambda\bm{I}$ can aid in resolving issues surrounding si
 The idea behind the Lasso regression is similar to that of Ridge regression. However, it comes with a few of its own benefits, such that it tends to zero out $\beta$ coefficients. To see this, we can take a look at the constraint function,
 \begin{align}
     \beta(\lambda) = \underset{\beta\in \mathbb{R}^{p}}{\text{min}}(||\bm{X}\beta - \bm{y}||^2_2 + \lambda||\beta||^2_1)
-    \label{eq:ridge_constraint}
+    \label{eq:lasso_constraint}
 \end{align}
 where we are taking the L$^1$ norm(popularly called Taxicab or Manhattan norm) in the $\lambda$ term, $\lambda||\beta||^2_1$. Since the L$^1$ norm is defined as
 \begin{align*}
@@ -224,7 +224,7 @@ The bias is defined as
 \end{align}
 which is measure of how much the prediction deviates from the real data.
 
-A note on the Noise is needed here before we move on. The noise is defined as the the variance in the real data, $\text{Noise}=\text{Var}(\epsilon_\mathrm{noise})$. Since we cannot know the noise beforehand, this will be gobbled up into the bias, as that is a measure of the deviation in real data and prediction. Since the noise is irreducible in the sense we cannot remove the initial noise in the data, the MSE will never lie below $\text{Var}(\epsilon)$\citep[ch. 2, p. 34]{james2013introduction}.
+A note on the Noise is needed here before we move on. The noise is defined as the the variance in the real data, $\text{Noise}=\text{Var}(\epsilon_\mathrm{noise})$. Since we cannot know the noise beforehand, this will be gobbled up into the bias, as that is a measure of the deviation in real data and prediction. Since the noise is irreducible in the sense we cannot remove the initial noise in the data, the MSE will never lie below $\text{Var}(\epsilon)$ \citep[ch. 2, p. 34]{james2013introduction}.
 
 The variance in \eqref{eq:bias-variance} is defined as the variance in in the prediction, $\tilde{\bm{y}}$.
 
@@ -314,7 +314,7 @@ As given in \cite{franke1979critical},
 \end{align}
 
 \bibliography{bib/bibliography.bib}
-\bibliographystyle{plain}
+\bibliographystyle{plainnat}
 
 
 \end{document}
