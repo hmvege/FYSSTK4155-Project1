@@ -91,7 +91,7 @@ def real_data():
     test_percent = 0.4
 
     noise_sigma_values = np.linspace(0, 0.5, 15)
-    polynom_degrees = [5]
+    polynom_degrees = [1,2,3,4,5]
     alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]
 
     np.random.seed(1234)
@@ -132,7 +132,7 @@ def franke_func_tasks():
 
     noise_sigma_values = np.linspace(0, 0.5, 10)
     noise_mu = 0
-    polynom_degrees = [5]
+    polynom_degrees = [1,2,3,4,5]
     alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e1, 1e2, 1e3, 1e4]
 
     np.random.seed(1234)

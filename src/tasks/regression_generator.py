@@ -465,7 +465,8 @@ class SKLearnLasso(_dataStorer):
                 **reg_kwargs),
             poly.transform,
             test_percent=test_percent,
-            k_splits=k_splits)
+            k_splits=k_splits,
+            print_results=print_results)
         self.data["kfoldcv"] = sk_results
 
         bs_reg = bs.BootstrapRegression(
