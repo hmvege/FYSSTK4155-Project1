@@ -145,7 +145,7 @@ def franke_func_tasks(pickle_fname="franke_data_default.pickle"):
     N_cv_bs = 100  # 100
     k_splits = 4
     test_percent = 0.4
-    print_results = True
+    print_results = False
 
     noise_mu = 0
 
