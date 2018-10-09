@@ -225,38 +225,38 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                 print("\n**** OLS Noise: {0:.4f} Degree: {1:d}\n".format(
                     float(noise), deg))
 
-                # z += np.random.normal(0, noise, size=z.shape)
-                # if "manual" in regression_implementation:
-                #     print("\n** MANUAL **")
-                #     ols = reggen.ManualOLS(x, y, z, deg=deg,
-                #                            N_bs=N_bs_resampling,
-                #                            N_cv_bs=N_cv_bs,
-                #                            test_percent=test_percent,
-                #                            print_results=print_results)
-
-                #     data.append({
-                #         "reg_type": "ols",
-                #         "degree": deg,
-                #         "noise": noise,
-                #         "method": "manual",
-                #         "data": cp.deepcopy(ols.data),
-                #     })
-
-                if "sklearn" in regression_implementation:
-                    print("\n** SKLEARN **")
-                    sk_ols = reggen.SKLearnOLS(x, y, z, deg=deg,
-                                               N_bs=N_bs_resampling,
-                                               N_cv_bs=N_cv_bs,
-                                               test_percent=test_percent,
-                                               print_results=print_results)
+                z += np.random.normal(0, noise, size=z.shape)
+                if "manual" in regression_implementation:
+                    print("\n** MANUAL **")
+                    ols = reggen.ManualOLS(x, y, z, deg=deg,
+                                           N_bs=N_bs_resampling,
+                                           N_cv_bs=N_cv_bs,
+                                           test_percent=test_percent,
+                                           print_results=print_results)
 
                     data.append({
                         "reg_type": "ols",
                         "degree": deg,
                         "noise": noise,
-                        "method": "sklearn",
-                        "data": cp.deepcopy(sk_ols.data),
+                        "method": "manual",
+                        "data": cp.deepcopy(ols.data),
                     })
+
+                # if "sklearn" in regression_implementation:
+                #     print("\n** SKLEARN **")
+                #     sk_ols = reggen.SKLearnOLS(x, y, z, deg=deg,
+                #                                N_bs=N_bs_resampling,
+                #                                N_cv_bs=N_cv_bs,
+                #                                test_percent=test_percent,
+                #                                print_results=print_results)
+
+                #     data.append({
+                #         "reg_type": "ols",
+                #         "degree": deg,
+                #         "noise": noise,
+                #         "method": "sklearn",
+                #         "data": cp.deepcopy(sk_ols.data),
+                #     })
 
     if "ridge" in regression_methods:
         print("\nRidge Regression. N ridge regressions: ",
@@ -272,37 +272,37 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                            "Degree: {2:d} ****\n").format(
                         alpha, float(noise), deg))
 
-                    # if "manual" in regression_implementation:
-                    #     print("\n** MANUAL **")
-                    #     ridge = \
-                    #         reggen.ManualRidge(x, y, z, alpha, deg=deg,
-                    #                            test_percent=test_percent,
-                    #                            print_results=print_results)
-
-                    #     data.append({
-                    #         "reg_type": "ridge",
-                    #         "degree": deg,
-                    #         "noise": noise,
-                    #         "alpha": alpha,
-                    #         "method": "manual",
-                    #         "data": cp.deepcopy(ridge.data),
-                    #     })
-
-                    if "sklearn" in regression_implementation:
-                        print("\n** SKLEARN **")
-                        sk_ridge = \
-                            reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
-                                                test_percent=test_percent,
-                                                print_results=print_results)
+                    if "manual" in regression_implementation:
+                        print("\n** MANUAL **")
+                        ridge = \
+                            reggen.ManualRidge(x, y, z, alpha, deg=deg,
+                                               test_percent=test_percent,
+                                               print_results=print_results)
 
                         data.append({
                             "reg_type": "ridge",
                             "degree": deg,
                             "noise": noise,
                             "alpha": alpha,
-                            "method": "sklearn",
-                            "data": cp.deepcopy(sk_ridge.data),
+                            "method": "manual",
+                            "data": cp.deepcopy(ridge.data),
                         })
+
+                    # if "sklearn" in regression_implementation:
+                    #     print("\n** SKLEARN **")
+                    #     sk_ridge = \
+                    #         reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
+                    #                             test_percent=test_percent,
+                    #                             print_results=print_results)
+
+                    #     data.append({
+                    #         "reg_type": "ridge",
+                    #         "degree": deg,
+                    #         "noise": noise,
+                    #         "alpha": alpha,
+                    #         "method": "sklearn",
+                    #         "data": cp.deepcopy(sk_ridge.data),
+                    #     })
 
     if "lasso" in regression_methods:
         print("\nLasso Regression. N lasso regressions: ",

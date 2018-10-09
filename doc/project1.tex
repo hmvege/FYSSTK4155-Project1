@@ -26,8 +26,12 @@
 \usepackage{algorithmicx}
 \usepackage{algpseudocode}
 
+% \usepackage{fancyhdr}
+
 % For customized hlines in tables
 \usepackage{ctable}
+
+
 
 % Correct way for typing C++
 \newcommand{\CC}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
@@ -65,7 +69,7 @@
 % For fixing large table height
 \usepackage{a4wide}
 
-\title{Machine Learning and Terrain data}
+\title{Regression analysis on terrain data}
 \author{Mathias M. Vege}
 
 \date{\today}
@@ -73,7 +77,7 @@
 \maketitle
 
 \begin{abstract}
-An often used tool in Machine Learning is that of Linear Regression and resampling. For this paper, we investigated how to use Ordinary Least Squares, Ridge and Lasso regression together with resampling techniques such as bootstrapping, $k$-fold Cross Validation and Monte Carlo Cross Validation. By first studying the Franke function, we were able to find a set of optimal parameters to use when investigating real terrain data. These where $2$
+An often used tool in Machine Learning is that of Linear Regression and resampling. For this paper, we investigated how to use Ordinary Least Squares, Ridge and Lasso regression together with resampling techniques such as bootstrapping, $k$-fold Cross Validation and Monte Carlo Cross Validation. After first studying the Franke function and using that as a proving ground for the different models, we moved on to study terrain data from a region outside Stavanger. The optimal model for this region turned out to be OLS with $R^2=0.91$ and MSE$=1.26\cdot 10^{-3}$, which is an acceptable result considering the scope of this report.
 \end{abstract}
 
 \tableofcontents
@@ -317,24 +321,78 @@ The Franke function $F(x,y)$\eqref{eq:franke_function} maps coordinates $x$, $y$
     \label{fig:franke_function}
 \end{figure}
 
-In the figure we can see how the 
+% FRANKE FUNC HEAT MAP
+In figure \ref{fig:mse_r2_heatmaps_ff_lasso}, we can observe the $R^2$-score and MSE and how Lasso regression behaves for different levels of noise and $\lambda$-parameters. The same can be seen for Lasso in figure \ref{fig:mse_r2_heatmaps_ff_ridge}.
 \begin{figure}
     \centering
     \begin{subfigure}[b]{0.5\textwidth}
         \centering
-        \includegraphics[scale=0.5]{../fig/terrain_heatmap.pdf}
+        \includegraphics[scale=0.5]{../fig/franke3_lasso_r2_deg5_dtyperegression_heatmap.pdf}
         \caption{A plot of $R^2$ versus noise and $\lambda$}
-        \label{fig:r2_terrain_heatmap}
+        \label{fig:franke_heatmat_r2}
     \end{subfigure}%
     \begin{subfigure}[b]{0.5\textwidth}
         \centering
-        \includegraphics[scale=0.5]{../fig/terrain_heatmap.pdf}
+        \includegraphics[scale=0.5]{../fig/franke3_lasso_mse_deg5_dtyperegression_heatmap.pdf}
         \caption{A plot of MSE versus noise and $\lambda$}
-        \label{fig:mse_terrain_heatmap}
+        \label{fig:franke_heatmat_mse}
     \end{subfigure}
-    \caption{A plot of how MSE and $R^2$ varies as function of noise and $\lambda$.}
-    \label{fig:mse_r2_heatmaps_terrain}
+    \caption{A plot of how MSE and $R^2$ varies as function of noise and $\lambda$ with Lasso regression.}
+    \label{fig:mse_r2_heatmaps_ff_lasso}
 \end{figure}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/franke3_ridge_r2_deg5_dtyperegression_heatmap.pdf}
+        \caption{A plot of $R^2$ versus noise and $\lambda$}
+        \label{fig:franke_heatmat_r2_ridge}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/franke3_ridge_mse_deg5_dtyperegression_heatmap.pdf}
+        \caption{A plot of MSE versus noise and $\lambda$}
+        \label{fig:franke_heatmat_mse_ridge}
+    \end{subfigure}
+    \caption{A plot of how MSE and $R^2$ varies as function of noise and $\lambda$ with Ridge regression.}
+    \label{fig:mse_r2_heatmaps_ff_ridge}
+\end{figure}
+
+% \begin{figure}
+%     \centering
+%     \includegraphics[scale=1.0]{../fig/bias_variance_total.pdf}
+%     \caption{The Bias-Variance relation from bootstrapping the regression data from the Franke function.}
+%     \label{fig:franke_function_total_bias_variance}
+% \end{figure}
+
+The bias-variance for the Franke function can be seen in figure \ref{fig:bias-var-franke}.
+
+% FRANKE FUNC BIAS VARIANCE
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/franke3_bias_variance_tradeoff_bootstrap_var_ridge.pdf}
+        \caption{Ridge}
+        \label{fig:biasvar-ridge-franke}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/franke3_bias_variance_tradeoff_bootstrap_var_ols.pdf}
+        \caption{OLS}
+        \label{fig:biasvar-OLSfranke}
+    \end{subfigure} \\
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/franke3_bias_variance_tradeoff_bootstrap_var_lasso.pdf}
+        \caption{Lasso}
+        \label{fig:biasvar-bs-franke}
+    \end{subfigure}
+    \caption{Variance-bias plots of the OLS, Ridge and Lasso.}
+    \label{fig:bias-var-franke}
+\end{figure}
+
 
 % \begin{table}[H]
 %     \centering
@@ -352,30 +410,38 @@ In the figure we can see how the
 
 \begin{figure}[H]
     \centering
+    \includegraphics[scale=0.8]{../fig/frank3_bs_d5_beta_values.pdf}
+    \caption{The $\beta$ parameters of the Franke function for polynomial degree 5, a noise level of $\mathcal{0.8571,\infty}$ and a $\alpha=10^{-3}$. The errors are the $95\%$-CI.}
+    \label{fig:franke_beta_parmas}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
     \includegraphics[scale=0.8]{../fig/franke_function_best_fit.png}
     \caption{The optimal fit of the Franke function\eqref{eq:franke_function}, using OLS and polynomial of degree 5.}
     \label{fig:optimal_fit_franke_func}
 \end{figure}
 
 
-\subsection{Modeling terrain}
-The terrain we have looked is from a region close to Stavanger in Norway, and can be viewed in figure \ref{fig:terrain_map_full} together with a subset of this region that can be viewed in the sub-figure, \ref{fig:terrain_patch}. We chose a grid of size $100 \times 250$.
 
-\begin{figure}
+\subsection{Modeling terrain}
+The terrain we have looked is from a region close to Stavanger in Norway, and can be viewed in figure \ref{fig:terrain_map_full} together with a subset of this region that can be viewed in the sub-figure, \ref{fig:terrain_patch}. We chose a grid of size $100 \times 250$. Further, when modeling the terrain, it was normalized by maximal height found in the total dataset.
+
+\begin{figure}[H]
     \centering
     \includegraphics[scale=1.0]{../fig/terrain_data.png}
     \caption{Terrain data from a region close to Stavanger, Norway.}
     \label{fig:terrain_map_full}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \includegraphics[scale=0.8]{../fig/terrain_patch.pdf}
     \caption{A subset of the region found in figure \ref{fig:terrain_map_full}.}
     \label{fig:terrain_patch}
 \end{figure}
 
-The optimal fit method was found by looking at the $R^2$ and MSE values\eqref{eq:opt_fit}. The result was that the Lasso method proved to be the most effective, as summed up in table \ref{tab:opt_result}. The figure which these parameters replicates in terms of terrain features can be viewed in figure \ref{fig:optimal_fit}.
+The optimal fit method was found by looking at the $R^2$ and MSE values\eqref{eq:opt_fit}. The result was that the OLS method proved to be the most effective, as summed up in table \ref{tab:opt_ols_result}. The figure which these parameters replicates in terms of terrain features can be viewed in figure \ref{fig:terrain_optimal_fit_ols}. An example of the optimal fit of the Lasso different Lasso models can be found in table \ref{tab:opt_lasso_result}.
 \begin{table}[H]
     \centering
     \begin{tabular}{l l l l l l l} % 6 columns
@@ -385,19 +451,133 @@ The optimal fit method was found by looking at the $R^2$ and MSE values\eqref{eq
         \specialrule{.1em}{.05em}{.05em}
     \end{tabular}
     \caption{Based on the different fitting procedures, these fit parameters were determined to be the best. The polynomial fitted was of degree $8$.}
-    \label{tab:opt_result}
+    \label{tab:opt_lasso_result}
 \end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l l l l l l} % 6 columns
+        \specialrule{.1em}{.05em}{.05em}
+        Score     & Degree    &$R^2$      & MSE                   & $\mathrm{Bias}^2$     & Var                    \\ \hline
+        $9.0\cdot{-2}$      & $6$         & $0.91$    & $1.26\cdot 10^{-3}$   & $1.26\cdot 10^{-3}$   & $2.93\cdot 10^{-6}$   \\
+        \specialrule{.1em}{.05em}{.05em}
+    \end{tabular}
+    \caption{Based on the different fitting procedures, these fit parameters were determined to be the best. The polynomial fitted was of degree $6$.}
+    \label{tab:opt_ols_result}
+\end{table}
+
+% OLS
+% {'score': 0.09024518915031703, 'r2': 0.9097636023691074, 'mse': 0.0012596457342964624, 'bias': 0.001256713308784061, 'var': 2.9324255124013686e-06, 'noise': 0.001256713308784061, 'reg_type': 'ols', 'degree': 6, 'beta': array([ 7.95824708e-01,  5.37249929e-04,  6.15513938e-03, -2.08542751e-04,
+%         2.11857159e-06,  5.98614588e-05,  4.16095330e-06, -4.02939131e-06,
+%         7.89545480e-06, -1.30379909e-05, -3.32149319e-08,  3.08213815e-08,
+%         1.38111958e-09, -1.29121948e-07,  3.18378597e-07,  1.19263313e-10,
+%        -3.57825641e-11, -3.67891193e-10,  5.83624735e-10,  6.46140823e-10,
+%        -2.95508019e-09, -1.58929619e-13, -1.18643065e-13,  1.21616184e-12,
+%        -1.33950779e-12, -6.44745044e-13, -1.39629121e-12,  9.64220510e-12])}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{r r r r}
+        \specialrule{.1em}{.05em}{.05em}
+        $7.95\cdot 10^{-1}$ & $ 5.37\cdot 10^{-4}$ & $ 6.15\cdot 10^{-3}$ & $-2.08\cdot 10^{-4}$ \\
+        $2.11\cdot 10^{-6}$ & $ 5.98\cdot 10^{-5}$ & $ 4.16\cdot 10^{-6}$ & $-4.02\cdot 10^{-6}$ \\
+        $7.89\cdot 10^{-6}$ & $-1.30\cdot 10^{-5}$ & $-3.32\cdot 10^{-8}$ & $ 3.08\cdot 10^{-8}$ \\
+        $1.38\cdot 10^{-9}$ & $-1.29\cdot 10^{-7}$ & $ 3.18\cdot 10^{-7}$ & $ 1.19\cdot 10^{-10}$ \\
+        $-3.57\cdot 10^{-11}$ & $-3.67\cdot 10^{-10}$ & $ 5.83\cdot 10^{-10}$ & $ 6.46\cdot 10^{-10}$ \\
+        $-2.95\cdot 10^{-9}$ & $-1.58\cdot 10^{-13}$ & $-1.18\cdot 10^{-13}$ & $ 1.21\cdot 10^{-12}$ \\
+        $-1.33\cdot 10^{-12}$ & $-6.44\cdot 10^{-13}$ & $-1.39\cdot 10^{-12}$ & $ 9.64\cdot 10^{-12}$ \\
+        \specialrule{.1em}{.05em}{.05em}
+    \end{tabular}
+    \caption{The optimal fit $\beta$ parameters as seen for OLS for a polynomial of degree 6. The $\beta$ parameters are on row-column order.}
+    \label{tab:opt_beta_params_ols}
+\end{table}
+
+
+% LASSO
+% {'score': 0.12313261670539472, 'r2': 0.8768796483619059, 'mse': 0.0017379036882720093, 'bias': 0.0017361576915235599, 'var': 1.745996748449357e-06, 'alpha': 0.0001, 'noise': 0.0017361576915235599, 'reg_type': 'lasso', 'degree': 8, 'beta': array([ 8.40715735e-01, -3.61088984e-03,  2.62194267e-03,  2.91964035e-06,
+%         6.05572842e-06, -1.53966856e-05,  4.10830837e-08, -3.92724830e-08,
+%         1.40408026e-08, -3.27041482e-08,  1.44858027e-10, -1.93110027e-11,
+%        -1.44737965e-09,  1.71224811e-09,  1.06400910e-09,  3.58442520e-13,
+%         5.86756339e-13, -5.28444955e-12, -9.95743762e-12,  2.66172231e-11,
+%         7.48607981e-12,  2.87673941e-16,  3.25493281e-15, -2.41427363e-15,
+%        -4.82465969e-14, -4.94354540e-14,  2.41163093e-13, -2.94634399e-14,
+%        -5.25734294e-18,  4.00592037e-18,  9.04326862e-17, -6.09334625e-17,
+%        -2.92895511e-16, -3.61807113e-16,  1.50225626e-15, -1.21101820e-15,
+%        -5.03333070e-20, -8.86697703e-20,  7.38543029e-19,  5.47575032e-19,
+%        -7.92504796e-20, -1.80177562e-18, -4.85806104e-18,  3.85251545e-18,
+%        -1.67008095e-17])}
+
+
+The optimal fit of the terrain data using can be seen in figure \ref{fig:terrain_optimal_fit_ols}. The best regression method resulted in being OLS regression. The Beta parameters of this fit can seen in figure \ref{tab:opt_beta_params_ols}.
 
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.8]{../fig/lasso_fit_deg8.png}
-    \caption{The optimal fit of the terrain data. Determined to be by a polynomial of degree 8 with the Lasso method.}
-    \label{fig:optimal_fit}
+    \caption{The optimal fit of the terrain data using the Lasso method, for a polynomial of degree 8}
+    \label{fig:terrain_optimal_fit_lasso}
 \end{figure}
 
 
-\section{Discussion and conclusion}
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{../fig/ols_optimal_fit.png}
+    \caption{The optimal fit of the terrain data using the OLS method, for a polynomial of degree 6.}
+    \label{fig:terrain_optimal_fit_ols}
+\end{figure}
 
+
+The Bias-Variance of the different terrain fits can be seen in figure \ref{fig:bias-var-terrain}.
+
+% TERRAIN FUNC BIAS VARIANCE
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/terrain1_bias_variance_tradeoff_kfoldcv_var_ols.pdf}
+        \caption{The bias-variance trade off for different polynomial degrees in the fit function OLS on the terrain data.}
+        \label{fig:terrain-bias-var-ols}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/terrain1_bias_variance_tradeoff_kfoldcv_var_ridge.pdf}
+        \caption{The bias-variance trade off for different polynomial degrees in the fit function Ridge on the terrain data.}
+        \label{fig:terrain-bias-var-ridge}
+    \end{subfigure} \\
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/terrain1_bias_variance_tradeoff_kfoldcv_var_lasso.pdf}
+        \caption{The bias-variance trade off for different polynomial degrees in the fit function Lasso on the terrain data.}
+        \label{fig:terrain-bias-var-lasso}
+    \end{subfigure}
+    \caption{Variance-bias plots of the OLS, Ridge and Lasso.}
+    \label{fig:bias-var-terrain}
+\end{figure}
+
+% TERRAIN BETA PARAMETERS
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{../fig/terrain1_beta_values_d8_noise00000_alpha00001_bootstrap.pdf}
+    \caption{The $\beta$ values for the optimal fit as seen in \ref{fig:terrain_optimal_fit_lasso}, plotted with their $95\%$-CI.}
+    \label{fig:terrain_optimal_fit_params}
+\end{figure}
+
+
+% ridge_optimal_fit
+% lasso_optimal_fit
+
+
+\section{Discussion, conclusion and final thoughts}
+We have now taken a deep dive into the world of linear regression, and it is time to reemerge at the surface and look at what we have learned. We started this journey by using the Franke function as a tool to test the OLS-, Ridge- and Lasso- regression and $k$-fold CV and bootstrap resampling. What we learned was that the efficacy Ridge and Lasso is greatly dependent on the noise of the data and their $\lambda$ values, as seen in the figures of \ref{fig:mse_r2_heatmaps_ff_ridge} and in \ref{fig:mse_r2_heatmaps_ff_lasso}. When looking at figure \ref{fig:mse_r2_heatmaps_ff_lasso}, we also discover that the $R^2$ value as rather low - never reaches above $0.02$. This might indicate that the regression analysis is incorrect for what we have found.
+
+% However, as seen in some of the data, there appear to be an issue with the Ridge regression in when looking at the bias-variance relation in figure \ref{fig:terrain-bias-var-ridge}.
+
+The optimal model which is seen in figure \ref{fig:terrain_optimal_fit_ols} appears to replicate the terrain quite well. In the table \ref{tab:opt_beta_params_ols} we see that the $\beta$ parameters stretches from around $10^{-1}$ to $10^{-13}$, which of course explains the minuscule $\beta$ parameters found seen in the figure \ref{fig:franke_beta_parmas}. The $\beta$ parameters were computed using resampling. As for why the Lasso and Ridge did not outperform OLS for the terrain data, might be explained by the fact that the data patch was not \textit{noise} enough. A better approach to investigate this, would be to randomly sample a set of different terrain patches, and test on each of them to see what gives the best result.
+
+Further, the choice of optimal model through the equation \eqref{eq:opt_fit} is a rather ad-hoc approach. In the future, an better approach would be to perhaps include the errors in the $\beta$ parameters in the choice of optimal model.
+
+Personally I would have have needed more time to iron out kinks of the code, and polish what I've written even further. Particularly, I would like to take a closer look at the Lasso regression and figure out why it delivers such low $R^2$ scores in figure \ref{fig:mse_r2_heatmaps_ff_lasso}. I would also have liked investigate how $MC-CV$ behaves in greater detail as no results for $MC-CV$ were presented here. A more detailed investigation into the resampling techniques would also be interesting. I had more time, a verification of code would also have been implemented more rigorously using unit tests cross checking of data against the methods of SciKit Learn. The dependency of the size of the data set is also something which would have been interesting to probe. Such as, how does the $R^2$ and MSE behave under different data sets. Further, investigating both the noise levels and the $\alpha$ values with a greater granularity would have been of interest as well.
+
+To summarize, this has been a great exercise into the working of OLS, Ridge and Lasso, and we have seen that the OLS works best when there is little noise, while Lasso appears to for more complicated cases when theres greater variation in noise. Finally, an optimal model for some real terrain data was found. The OLS turned out to be the most accurate one, due to its ability to work around small to medium noise features in a data set. The final fit, as seen in figure\ref{fig:terrain_optimal_fit_params} with $R^2=0.91$ and MSE$=1.26\cdot 10^{-3}$, which is an acceptable fit considering the scope of this report.
 
 \begin{appendices}
 \subsection{The Franke Function} \label{sec:appendix}
