@@ -144,15 +144,19 @@ def franke_func_tasks(pickle_fname="franke_data_default.pickle"):
     N_cv_bs = 100  # 100
     k_splits = 4
     test_percent = 0.4
-    print_results = False
+    print_results = True
 
-    noise_sigma_values = np.linspace(0, 1.0, 10)
     noise_mu = 0
-    polynom_degrees = [1, 2, 3, 4, 5, 6, 7, 8]
-    # alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3]
 
-    alpha_values = [1e-4, 0.5e-3, 1e-3, 0.5e-2, 1e-2, 0.5e-1,
-                    1e-1, 0.5, 1, 0.5e1, 1e1, 0.5e2, 1e2, 0.5e3, 1e3]
+    # noise_sigma_values = np.linspace(0, 1.0, 10)
+    # polynom_degrees = [1, 2, 3, 4, 5, 6, 7, 8]
+    # alpha_values = [1e-4, 0.5e-3, 1e-3, 0.5e-2, 1e-2, 0.5e-1,
+    #                 1e-1, 0.5, 1, 0.5e1, 1e1, 0.5e2, 1e2, 0.5e3, 1e3]
+
+    noise_sigma_values = np.linspace(0, 1.0, 3)
+    polynom_degrees = [5]
+    alpha_values = [1e-3, 1e-2, 1e-1, 1]
+    # alpha_values = [0.1, 0.2, 0.3, 0.4, 0.5]
 
     # print(alpha_values)
     # print(np.logspace(-4, 4, 20))
@@ -206,18 +210,19 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
     data = []
 
     if "ols" in regression_methods:
-        print("\nOrdinarty Linear Regression")
+        print("\nOrdinarty Linear Regression\n")
 
         for deg in polynom_degrees:
-            print("\n**** Polynom degree: {} ****".format(deg))
+            print("\n**** Polynom degree: {} ****\n".format(deg))
 
             for noise in noise_sigma_values:
 
-                print("\n**** OLS Noise: {0:.4f} Degree: {1:d}".format(
+                print("\n**** OLS Noise: {0:.4f} Degree: {1:d}\n".format(
                     float(noise), deg))
 
                 z += np.random.normal(0, noise, size=z.shape)
                 if "manual" in regression_implementation:
+                    print("\n** MANUAL **")
                     ols = reggen.ManualOLS(x, y, z, deg=deg,
                                            N_bs=N_bs_resampling,
                                            N_cv_bs=N_cv_bs,
@@ -233,6 +238,7 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                     })
 
                 # if "sklearn" in regression_implementation:
+                #     print("\n** SKLEARN **")
                 #     sk_ols = reggen.SKLearnOLS(x, y, z, deg=deg,
                 #                                N_bs=N_bs_resampling,
                 #                                N_cv_bs=N_cv_bs,
@@ -249,18 +255,20 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
 
     if "ridge" in regression_methods:
         print("\nRidge Regression. N ridge regressions: ",
-              len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values))
+              len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values),
+              "\n")
 
         for noise in noise_sigma_values:
             z += np.random.normal(0, noise, size=z.shape)
             for deg in polynom_degrees:
-                print("\n**** Polynom degree: {} ****".format(deg))
+                print("\n**** Polynom degree: {} ****\n".format(deg))
                 for alpha in alpha_values:
                     print(("\n**** Ridge Lambda: {0:-e} Noise: {1:.4f} "
-                           "Degree: {2:d} ****").format(
+                           "Degree: {2:d} ****\n").format(
                         alpha, float(noise), deg))
 
                     if "manual" in regression_implementation:
+                        print("\n** MANUAL **")
                         ridge = \
                             reggen.ManualRidge(x, y, z, alpha, deg=deg,
                                                test_percent=test_percent,
@@ -275,32 +283,34 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                             "data": cp.deepcopy(ridge.data),
                         })
 
-                    # if "sklearn" in regression_implementation:
-                    #     sk_ridge = \
-                    #         reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
-                    #                             test_percent=test_percent,
-                    #                             print_results=print_results)
+                    if "sklearn" in regression_implementation:
+                        print("\n** SKLEARN **")
+                        sk_ridge = \
+                            reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
+                                                test_percent=test_percent,
+                                                print_results=print_results)
 
-                    #     data.append({
-                    #         "reg_type": "ridge",
-                    #         "degree": deg,
-                    #         "noise": noise,
-                    #         "alpha": alpha,
-                    #         "method": "sklearn",
-                    #         "data": cp.deepcopy(sk_ridge.data),
-                    #     })
+                        data.append({
+                            "reg_type": "ridge",
+                            "degree": deg,
+                            "noise": noise,
+                            "alpha": alpha,
+                            "method": "sklearn",
+                            "data": cp.deepcopy(sk_ridge.data),
+                        })
 
     if "lasso" in regression_methods:
         print("\nLasso Regression. N lasso regressions: ",
-              len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values))
+              len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values),
+              "\n")
 
         for noise in noise_sigma_values:
             z += np.random.normal(0, noise, size=z.shape)
             for deg in polynom_degrees:
-                print("\n**** Polynom degree: {} ****".format(deg))
+                print("\n**** Polynom degree: {} ****\n".format(deg))
                 for alpha in alpha_values:
                     print(("\n**** Lasso Lambda: {0:-e} Noise: {1:.4} "
-                           "Degree: {2:d} ****").format(
+                           "Degree: {2:d} ****\n").format(
                         alpha, float(noise), deg))
 
                     # if "manual" in regression_implementation:
@@ -308,6 +318,8 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                     #                   test_percent=test_percent)
 
                     if "sklearn" in regression_implementation:
+                        print("\n** SKLEARN **")
+
                         sk_lasso = \
                             reggen.SKLearnLasso(x, y, z, alpha, deg=deg,
                                                 test_percent=test_percent,

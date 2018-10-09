@@ -65,9 +65,10 @@ class _dataStorer:
     def get_data(self):
         return self.data
 
+
 class ManualOLS(_dataStorer):
     def __init__(self, x, y, z, deg=1, N_bs=100, N_cv_bs=100, k_splits=4,
-                      test_percent=0.4, print_results=False):
+                 test_percent=0.4, print_results=False):
         """Manual implementation of the OLS."""
 
         poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
@@ -135,7 +136,7 @@ class ManualOLS(_dataStorer):
                                              mccv.bias + mccv.var))
             print("Diff: {}".format(abs(mccv.bias + mccv.var - mccv.MSE)))
 
-        self._fill_data(kfcv, "mccv")
+        self._fill_data(mccv, "mccv")
 
         # Resampling with bootstrapping
         bs_reg = bs.BootstrapRegression(
@@ -249,17 +250,18 @@ class ManualRidge(_dataStorer):
                  k_splits=4, test_percent=0.4, print_results=False):
         """Manual implementation of Ridge Regression."""
         poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-        X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
-                               cp.deepcopy(z.ravel()))
+        X = poly.fit_transform(cp.deepcopy(np.c_[
+            cp.deepcopy(x).ravel(), cp.deepcopy(y).ravel()]))
 
 
         linreg = reg.RidgeRegression(alpha)
-        linreg.fit(X, cp.deepcopy(z.ravel()))
-        z_predict_ = linreg.predict(X).ravel()
-        mse_error = metrics.mse(z.ravel(), z_predict_)
-        linreg_coef_var = np.diag(np.linalg.inv(X.T @ X))*mse_error
+        linreg.fit(cp.deepcopy(X), cp.deepcopy(z.ravel()))
+        z_predict_ = linreg.predict(cp.deepcopy(X)).ravel()
         r2 = metrics.R2(z.ravel(), z_predict_)
+        mse_error = metrics.mse(z.ravel(), z_predict_)
         bias = metrics.bias2(z.ravel(), z_predict_)
+
+        linreg_coef_var = np.diag(np.linalg.inv(X.T @ X))*mse_error
         self.data["regression"] = {
             "y_pred": z_predict_,
             "r2": r2,
@@ -269,6 +271,7 @@ class ManualRidge(_dataStorer):
             "beta_coefs_var": linreg_coef_var,
             "beta_95c": np.sqrt(linreg_coef_var)*2,
         }
+
         if print_results:
             print("R2:  {:-20.16f}".format(r2))
             print("MSE: {:-20.16f}".format(mse_error))
@@ -343,15 +346,17 @@ class SKLearnRidge(_dataStorer):
                  k_splits=4, test_percent=0.4, print_results=False):
         poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
         X = poly.fit_transform(
-            cp.deepcopy(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)]))
+            np.c_[cp.deepcopy(x).ravel(),
+                  cp.deepcopy(y).ravel()])
 
-        ridge = sk_model.Ridge(alpha=alpha, solver="lsqr", fit_intercept=False)
+        ridge = sk_model.Ridge(alpha=alpha, fit_intercept=False)
         ridge.fit(X, z.ravel())
 
         # Gets the predicted y values
         z_predict = ridge.predict(X)
 
         R2 = ridge.score(X, z.ravel())
+        # R2 =  1 - np.sum((z.ravel() - z_predict)**2)/np.sum((z.ravel() - np.mean(z.ravel()))**2)
         mse = metrics.mse(z.ravel(), z_predict)
         bias = metrics.bias2(z.ravel(), z_predict)
 
@@ -423,7 +428,8 @@ class SKLearnLasso(_dataStorer):
         """Lasso method for scikit learn."""
         poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
         X = poly.fit_transform(
-            cp.deepcopy(np.c_[x.reshape(-1, 1), y.reshape(-1, 1)]))
+            np.c_[cp.deepcopy(x).ravel(),
+                  cp.deepcopy(y).ravel()])
 
         ridge = sk_model.Lasso(alpha=alpha, fit_intercept=False)
         ridge.fit(X, z.ravel())
@@ -434,6 +440,18 @@ class SKLearnLasso(_dataStorer):
         bias = metrics.bias2(z.ravel(), z_predict)
         R2 = ridge.score(X, z.ravel())
         mse = metrics.mse(z.ravel(), z_predict)
+
+        # poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
+        # X = poly.fit_transform(
+        #     np.c_[cp.deepcopy(x).reshape(-1, 1),
+        #           cp.deepcopy(y).reshape(-1, 1)])
+
+        # linreg = sk_model.LinearRegression(fit_intercept=False)
+        # linreg.fit(X, z.ravel())
+        # z_predict_ = linreg.predict(X)
+        # r2 = metrics.R2(z.ravel(), z_predict_)
+        # bias = metrics.bias2(z.ravel(), z_predict_)
+        # mse_error = metrics.mse(z.ravel(), z_predict_)
 
         # Gets the beta coefs
         beta = ridge.coef_

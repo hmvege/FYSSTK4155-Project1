@@ -40,14 +40,14 @@ def print_elem(elem):
               "bias:", elem["data"]["regression"]["bias"])
 
 
-def analysis(data):
+def analysis(data, analysis_name):
 
     ols_data = []
     ridge_data = []
     lasso_data = []
 
-    # print(data[0].keys(), data[0]["data"].keys(),
-    #       data[0]["data"]["regression"].keys())
+    print(data[0].keys(), data[0]["data"].keys(),
+          data[0]["data"]["regression"].keys())
 
     for elem in data:
         # print_elem(elem)
@@ -76,6 +76,22 @@ def analysis(data):
     alpha_values = sorted(list(set(alpha_values)))
     degree_values = sorted(list(set(degree_values)))
 
+    stats = [
+        ("r2", r"$R^2$"),
+        ("mse", r"MSE"),
+        ("bias", r"Bias$^2$"),
+        ("var", r"Var"),
+    ]
+
+    data_type_values = [
+        ("regression", "Regression"),
+        ("kfoldcv", r"$k$-fold CV"),
+        ("mccv", r"MC-CV"),
+        ("bootstrap", r"Bootstrap")
+    ]
+
+    regression_types = ["ols", "ridge", "lasso"]
+
     # create_beta_table(ols_data)
 
     for alpha_ in alpha_values:
@@ -84,47 +100,54 @@ def analysis(data):
                 plot_beta_values(data, noise=noise_, deg=deg_,
                                  alpha=alpha_, data_type="bootstrap",
                                  noise_values=noise_values,
-                                 alpha_values=alpha_values)
+                                 alpha_values=alpha_values,
+                                 aname=analysis_name)
 
-    for deg_ in degree_values:
-        plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
-        plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
-        plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso")
+    for deg_ in degree_values[4:]:
+        plot_R2_noise(cp.deepcopy(data), deg=deg_,
+                      reg_type="ols", aname=analysis_name)
+        for alpha_ in alpha_values:
+            plot_R2_noise(cp.deepcopy(data), deg=deg_, alpha=alpha_,
+                          reg_type="ridge", aname=analysis_name)
+            plot_R2_noise(cp.deepcopy(data), deg=deg_, alpha=alpha_,
+                          reg_type="lasso", aname=analysis_name)
 
     plot_argx_argy(cp.deepcopy(data), "noise", "r2",
                    x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
-                   y_arg_latex=r"$R^2$", deg=5, reg_type="lasso")
+                   y_arg_latex=r"$R^2$", deg=5, reg_type="lasso",
+                   aname=analysis_name)
 
-    plot_bias_variance_all(cp.deepcopy(data), "mccv",
-                           data_type_header=r"MC-CV")
+    for dtype_ in data_type_values:
 
-    plot_bias_variance(cp.deepcopy(data), "ols", "mccv",
-                       data_type_header=r"MC-CV")
-    plot_bias_variance(cp.deepcopy(data), "ridge", "kfoldcv",
-                       data_type_header=r"$k$-fold CV")
-    plot_bias_variance(cp.deepcopy(data), "lasso", "bootstrap",
-                       data_type_header=r"Bootstrap")
+        if dtype_[0]=="regression":
+            continue
+
+        plot_bias_variance_all(cp.deepcopy(data), "mccv",
+                               data_type_header=r"MC-CV",
+                               aname=analysis_name)
+        for reg_type_ in regression_types:
+            
+
+            plot_bias_variance(cp.deepcopy(data), reg_type_, dtype_[0],
+                               data_type_header=dtype_[1],
+                               aname=analysis_name)
 
     for deg_ in degree_values:
-        heat_map(cp.deepcopy(ridge_data), "ridge",
-                 deg_, stat="r2", stat_latex=r"$R^2$")
-        heat_map(cp.deepcopy(ridge_data), "ridge",
-                 deg_, stat="mse", stat_latex=r"MSE")
-        heat_map(cp.deepcopy(ridge_data), "ridge",
-                 deg_, stat="bias", stat_latex=r"Bias$^2$")
-        heat_map(cp.deepcopy(ridge_data), "ridge",
-                 deg_, stat="var", stat_latex=r"Var")
+        for dtype_ in data_type_values:
+            for stat_ in stats:
 
-        heat_map(cp.deepcopy(lasso_data), "lasso",
-                 deg_, stat="r2", stat_latex=r"$R^2$")
-        heat_map(cp.deepcopy(lasso_data), "lasso",
-                 deg_, stat="mse", stat_latex=r"MSE")
-        heat_map(cp.deepcopy(lasso_data), "lasso",
-                 deg_, stat="bias", stat_latex=r"Bias$^2$")
-        heat_map(cp.deepcopy(lasso_data), "lasso",
-                 deg_, stat="var", stat_latex=r"Var")
+                if stat_[0] == "var" and dtype_[0] == "regression":
+                    continue
+                else:
 
-    find_optimal_parameters(data)
+                    heat_map(cp.deepcopy(ridge_data), "ridge",
+                             deg_, stat=stat_[0], stat_latex=stat_[1],
+                             data_type=dtype_[0], aname=analysis_name)
+                    heat_map(cp.deepcopy(lasso_data), "lasso",
+                             deg_, stat=stat_[0], stat_latex=stat_[1],
+                             data_type=dtype_[0], aname=analysis_name)
+
+    # find_optimal_parameters(data, aname=analysis_name)
 
 
 def create_beta_table(data):
@@ -184,10 +207,14 @@ def filter_data(data, sort_by="", data_type="", property_dict={}):
             elif isinstance(val, float):
                 if val != d[key]:
                     break
+            # elif type(val) == np.int_:  # Degrees filtering
+            #     if val != d[key]:
+            #         break
             elif type(d[key]) == np.float_:
                 if val != d[key]:
                     break
             else:
+                # print (key, d[key], val, type(val), type(d[key]))
                 if not val in d[key]:
                     break
         else:
@@ -229,23 +256,23 @@ def select_data(data, sort_by="", data_type="regression", stats_to_select=[],
 
 
 def plot_beta_values(data_, noise=0.0, alpha=0.1, deg=5, data_type="",
-                     noise_values=[], alpha_values=[]):
+                     noise_values=[], alpha_values=[], aname=""):
 
     data = []
     available_stats = ["r2", "mse", "bias", "var"]
 
     ols_data = filter_data(
         data_, sort_by="degree", data_type="",
-        property_dict={"method": "manual", "reg_type": "ols", "noise": noise})
+        property_dict={"method": "manual", "reg_type": "ols", "noise": int(noise)})
 
     ridge_data = filter_data(
         data_, sort_by="degree", data_type="",
-        property_dict={"method": "manual", "reg_type": "ridge", "noise": noise,
+        property_dict={"method": "manual", "reg_type": "ridge", "noise": int(noise),
                        "alpha": alpha})
 
     lasso_data = filter_data(
         data_, sort_by="degree", data_type="",
-        property_dict={"method": "manual", "reg_type": "lasso", "noise": noise,
+        property_dict={"method": "manual", "reg_type": "lasso", "noise": int(noise),
                        "alpha": alpha})
 
     if len(noise_values) == 0:
@@ -333,17 +360,17 @@ def plot_beta_values(data_, noise=0.0, alpha=0.1, deg=5, data_type="",
     fig.align_ylabels([ax1, ax2])
 
     figure_name = (
-        "../fig/beta_values_d{:d}_noise{:.4f}_alpha{:.4f}_"
-        "{:s}.pdf".format(deg, float(noise), float(alpha), data_type))
+        "../fig/{:s}_beta_values_d{:d}_noise{:.4f}_alpha{:.4f}_"
+        "{:s}.pdf".format(aname, deg, float(noise), float(alpha), data_type))
     fig.savefig(figure_name)
     print("Figure saved at {}".format(figure_name))
     plt.close(fig)
 
 
 def plot_argx_argy(data, x_arg, y_arg, x_arg_latex="", y_arg_latex="",
-                   deg=5, reg_type="ols"):
+                   deg=5, reg_type="ols", aname=""):
     new_data = filter_data(
-        data, x_arg, {"degree": 5, "method": "manual", "reg_type": reg_type})
+        data, x_arg, {"degree": deg, "method": "manual", "reg_type": reg_type})
     data_dict_array = {
         reg: select_data(
             new_data, x_arg, data_type=reg,
@@ -353,6 +380,9 @@ def plot_argx_argy(data, x_arg, y_arg, x_arg_latex="", y_arg_latex="",
     x_arg_values, _ = select_data(
         new_data, x_arg, data_type="regression",
         stats_to_select=["r2", "mse", "bias", "var"])
+
+    x_arg_values = sorted(x_arg_values)
+
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -377,47 +407,72 @@ def plot_argx_argy(data, x_arg, y_arg, x_arg_latex="", y_arg_latex="",
     ax.legend()
     ax.grid(True)
 
-    figure_name = "../fig/{0:s}_vs_{1:s}_deg{2:d}_{3:s}.pdf".format(
-        x_arg, y_arg, deg, reg_type)
+    figure_name = "../fig/{4:s}_{0:s}_vs_{1:s}_deg{2:d}_{3:s}.pdf".format(
+        x_arg, y_arg, deg, reg_type, aname)
     fig.savefig(figure_name)
     print("Figure saved at {}".format(figure_name))
     plt.close(fig)
 
 
-def plot_R2_noise(data, deg=5, reg_type="ols"):
-    new_data = filter_data(
-        data, "noise", {"degree": 5, "method": "manual", "reg_type": reg_type})
-    data_dict_array = {
-        reg: select_data(
-            new_data, "noise", data_type=reg,
-            stats_to_select=["r2", "mse", "bias", "var"])
-        for reg in data[0]["data"].keys()
-    }
-    noise, _ = select_data(
-        new_data, "noise", data_type="regression",
+def plot_R2_noise(data_, deg=5, reg_type="ols", alpha="", aname=""):
+
+    if reg_type != "ols":
+        if alpha=="":
+            exit("please provide an alpha value")
+        new_data = filter_data(
+            data_, sort_by="noise",
+            property_dict={
+                "method": "manual", "degree": int(deg), 
+                "alpha": alpha, "reg_type": reg_type})
+    else:
+        new_data = filter_data(
+            data_, sort_by="noise",
+            property_dict={
+                "method": "manual", "degree": int(deg), "reg_type": reg_type})
+
+    noise_values, _ = select_data(
+        data_, "noise", data_type="regression",
         stats_to_select=["r2", "mse", "bias", "var"])
+
+    noise_values = list(set(noise_values))
+
+    reg_values = np.empty(len(noise_values))
+    kfcv_values = np.empty(len(noise_values))
+    mccv_values = np.empty(len(noise_values))
+    bs_values = np.empty(len(noise_values))
+
+    for i, d_ in enumerate(new_data):
+        reg_values[i] = d_["data"]["regression"]["r2"]
+        kfcv_values[i] = d_["data"]["kfoldcv"]["r2"]
+        mccv_values[i] = d_["data"]["mccv"]["r2"]
+        bs_values[i] = d_["data"]["bootstrap"]["r2"]
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.plot(noise, data_dict_array["regression"]
-            [1]["r2"], label=r"OLS Regression")
-    ax.plot(noise, data_dict_array["kfoldcv"][1]["r2"], label=r"$k$-fold CV")
-    ax.plot(noise, data_dict_array["mccv"][1]["r2"], label=r"MCCV")
-    ax.plot(noise, data_dict_array["bootstrap"][1]["r2"], label=r"Bootstrap")
+    ax.plot(noise_values, reg_values, "-o", label=r"Regression")
+    ax.plot(noise_values, kfcv_values, "-x", label=r"$k$-fold CV")
+    ax.plot(noise_values, mccv_values, "-^", label=r"MCCV")
+    ax.plot(noise_values, bs_values, "-v", label=r"Bootstrap")
     ax.set_xlabel(r"Noise($\mathcal{N}(x,\infty))$)")
     ax.set_ylabel(r"$R^2$")
     # ax.set_yscale("log")
     ax.legend()
     ax.grid(True)
 
-    figure_name = "../fig/noise_vs_r2_deg{0:d}_{1:s}.pdf".format(deg, reg_type)
+    if alpha!="":
+        alpha_str = "_alpha{:.2f}".format(alpha)
+    else:
+        alpha_str = ""
+
+    figure_name = "../fig/{2:s}_noise_vs_r2_deg{0:d}{3:s}_{1:s}.pdf".format(
+        deg, reg_type, aname, alpha_str)
     fig.savefig(figure_name)
     print("Figure saved at {}".format(figure_name))
     plt.close(fig)
 
 
 def plot_bias_variance_all(data_, data_type, data_type_header="",
-                           tick_param_fs=None):
+                           tick_param_fs=None, aname=""):
 
     ols_data = filter_data(
         data_, sort_by="degree", data_type="regression",
@@ -506,28 +561,30 @@ def plot_bias_variance_all(data_, data_type, data_type_header="",
 
     fig.align_ylabels([ax1, ax2, ax3])
 
-    figure_name = "../fig/bias_variance_tradeoff_all_{0:s}_{1:s}.pdf".format(
-        data_type, stat)
+    figure_name = ("../fig/{2:s}_bias_variance_tradeoff_all_{0:s}_"
+        "{1:s}.pdf".format(data_type, stat, aname))
     fig.savefig(figure_name)
     print("Figure saved at {}".format(figure_name))
     plt.close(fig)
 
 
 def plot_bias_variance(data_, regression_type, data_type,
-                       data_type_header="", tick_param_fs=None):
+                       data_type_header="", tick_param_fs=None,
+                       max_degree=0, aname=""):
 
     data = filter_data(
         data_, sort_by="degree", data_type="regression",
         property_dict={
             "method": "manual", "reg_type": regression_type, "noise": 0.0})
 
-    max_degree = 5
-
     degree_values, _ = select_data(
         data, "degree", data_type=data_type,
         stats_to_select=["r2", "mse", "bias", "var"])
 
     degree_values = sorted(list(set(degree_values)))
+
+    if max_degree == 0:
+        max_degree = degree_values[-1]
 
     reg_values = np.empty((len(degree_values), 3))
 
@@ -555,15 +612,15 @@ def plot_bias_variance(data_, regression_type, data_type,
                         fontsize=tick_param_fs)
     # ax1.set_yscale("log")
 
-    figure_name = "../fig/bias_var iance_tradeoff_{0:s}_{1:s}_{2:}.pdf".format(
-        data_type, stat, regression_type)
+    figure_name = ("../fig/{3:s}_bias_variance_tradeoff_{0:s}_{1:s}"
+        "_{2:}.pdf".format(data_type, stat, regression_type, aname))
     fig.savefig(figure_name)
     print("Figure saved at {}".format(figure_name))
     plt.close(fig)
 
 
 def heat_map(data_, reg_type, degree, data_type="regression",
-             stat="r2", stat_latex=r"$R^2$"):
+             stat="r2", stat_latex=r"$R^2$", aname=""):
 
     if data_type == "regression" and stat == "var":
         print("Stat var not available for regression.")
@@ -596,11 +653,16 @@ def heat_map(data_, reg_type, degree, data_type="regression",
         for j, noise in enumerate(noise_values):
             for d in new_data:
                 if d["noise"] == noise and d["alpha"] == alpha:
-                    # print(d["data"]["regression"][stat])
-                    plot_data[i, j] = d["data"]["regression"][stat]
+                    try:
+                        # print(d["data"]["regression"][stat])
+                        plot_data[i, j] = d["data"]["regression"][stat]
+                    except KeyError:
+                        print(d["reg_type"],data_type, d.keys())
+                        return
 
     heatmap_plotter(alpha_values, noise_values, plot_data,
-                    "../fig/{0:s}_{1:s}_heatmap.pdf".format(reg_type, stat),
+                    "../fig/{2:s}_{0:s}_{1:s}_deg{3:d}_heatmap.pdf".format(reg_type,
+                                                                  stat, aname, degree),
                     xlabel=r"$\lambda$",
                     ylabel=r"Noise$(\mathcal{N}(',\infty))$",
                     cbartitle=stat_latex)
@@ -641,8 +703,8 @@ def find_optimal_parameters(data):
 
 
 def main():
-    analysis(load_pickle("franke_func_ols_final4.pickle"))
-    # analysis(load_pickle("franke_func.pickle"))
+    # analysis(load_pickle("franke_func_data.pickle"), "franke")
+    analysis(load_pickle("terrain_data1.pickle"), "terrain")
 
 
 if __name__ == '__main__':

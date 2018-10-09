@@ -164,11 +164,11 @@ class BootstrapRegression:
         # Bootstraps
         for i_bs in tqdm(range(N_bs), desc="Bootstrapping"):
             # Bootstraps test data
-            # x_boot, y_boot = boot(x_test, y_test)
+            x_boot, y_boot = boot(x_train, y_train)
 
-            X_boot, y_boot = boot(X_train, y_train)
+            # X_boot, y_boot = boot(X_train, y_train)
             # Sets up design matrix
-            # X_boot = self._design_matrix(x_boot)
+            X_boot = self._design_matrix(x_boot)
 
             # Fits the bootstrapped values
             self.reg.fit(X_boot, y_boot)

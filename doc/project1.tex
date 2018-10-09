@@ -70,7 +70,7 @@
 \maketitle
 
 \begin{abstract}
-None
+An often used tool in Machine Learning is that of Linear Regression and resampling. For this paper, we investigated how to use Ordinary Least Squares, Ridge and Lasso regression together with resampling techniques such as bootstrapping, $k$-fold Cross Validation and Monte Carlo Cross Validation. By first studying the Franke function, we were able to find a set of optimal parameters to use when investigating real terrain data. These where $2$
 \end{abstract}
 
 \tableofcontents
@@ -78,7 +78,9 @@ None
 \section{Introduction}
 A now-fully emergent field of data analysis, is that of regression and resampling. Included as a subset of the field of machine learning, regression is widely used as tool of prediction. Together with resampling we are offered ways of estimating the error of our models.
 
-One common way to investigate the efficacy of a model is to use the Franke function\cite{franke1979critical}.
+One common way to investigate the efficacy of a model is to use the Franke function\cite{franke1979critical}. This function has complexities which makes it suitable to use as a testing ground for machine learning. After studying the noise deependency on the quality of fit $R^2$, we moved on to investigating how the data fitting would behave for real terrain data.
+
+We will start of by introducing the different regression methods, then resampling techiniques before giving a brief description of the implementation. After that we will present the results in an orderly fashion, before delving into the discussion and conclusion of how we can choose the optimum fit parameters for the different regression methods and how well the differet methods reproduce the data. Whitout further a due, let us start of by introducing some basic notation on linear regression.
 
 \section{Methods and theory}
 Let us start of by summing up notational conventions. We will denote a \textit{case} or \textit{sample} by $x_i$, where $i=0,\cdots,n$. This will have a corresponding \textit{response} or \textit{outcome} $y_i = f(x_i)$. We typically want to estimate $f$ by some approximate function $\tilde{f}$. As we shall see, one method is by performing linear regression.
@@ -325,6 +327,24 @@ The terrain we have looked is from a region close to Stavanger in Norway, and ca
     \label{fig:terrain_patch}
 \end{figure}
 
+In the figure we can see how the 
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/terrain_heatmap.pdf}
+        \caption{A plot of $R^2$ versus noise and $\lambda$}
+        \label{fig:r2_terrain_heatmap}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{../fig/terrain_heatmap.pdf}
+        \caption{A plot of MSE versus noise and $\lambda$}
+        \label{fig:mse_terrain_heatmap}
+    \end{subfigure}
+    \caption{A plot of how MSE and $R^2$ varies as function of noise and $\lambda$.}
+    \label{fig:mse_r2_heatmaps_terrain}
+\end{figure}
 
 
 \section{Discussion and conclusion}
