@@ -135,9 +135,9 @@ class BootstrapRegression:
         x = self.x_data
         y = self.y_data
 
-        # Splits into training and test set.
-        x_test, x_train = np.split(x, [test_size], axis=0)
-        y_test, y_train = np.split(y, [test_size], axis=0)
+        # # Splits into training and test set.
+        # x_test, x_train = np.split(x, [test_size], axis=0)
+        # y_test, y_train = np.split(y, [test_size], axis=0)
 
         # Splits X data and design matrix data
         x_train, x_test, y_train, y_test = \
@@ -153,17 +153,22 @@ class BootstrapRegression:
         # var_list = np.empty(N_bs)
         beta_coefs = []
 
+        # Sets up design matrix to test for
         X_test = self._design_matrix(x_test)
 
         y_pred_list = np.empty((N_bs, test_size))
 
+        # Sets up the X_tra
+        X_train = self._design_matrix(x_train)
+
         # Bootstraps
         for i_bs in tqdm(range(N_bs), desc="Bootstrapping"):
             # Bootstraps test data
-            x_boot, y_boot = boot(x_test, y_test)
+            # x_boot, y_boot = boot(x_test, y_test)
 
+            X_boot, y_boot = boot(X_train, y_train)
             # Sets up design matrix
-            X_boot = self._design_matrix(x_boot)
+            # X_boot = self._design_matrix(x_boot)
 
             # Fits the bootstrapped values
             self.reg.fit(X_boot, y_boot)

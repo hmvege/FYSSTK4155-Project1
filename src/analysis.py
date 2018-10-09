@@ -80,41 +80,41 @@ def franke_analysis(*data):
 
     # create_beta_table(ols_data)
 
-    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
-    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
-    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso")
+    # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
+    # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
+    # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso")
 
-    plot_argx_argy(cp.deepcopy(data), "noise", "r2",
-                   x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
-                   y_arg_latex=r"$R^2$", deg=5, reg_type="lasso")
+    # plot_argx_argy(cp.deepcopy(data), "noise", "r2",
+    #                x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
+    #                y_arg_latex=r"$R^2$", deg=5, reg_type="lasso")
 
-    plot_bias_variance_all(cp.deepcopy(data), "mccv",
-                           data_type_header=r"MC-CV")
+    # plot_bias_variance_all(cp.deepcopy(data), "mccv",
+    #                        data_type_header=r"MC-CV")
 
-    plot_bias_variance(cp.deepcopy(data), "ols", "mccv",
-                       data_type_header=r"MC-CV")
-    plot_bias_variance(cp.deepcopy(data), "ridge", "kfoldcv",
-                       data_type_header=r"$k$-fold CV")
-    plot_bias_variance(cp.deepcopy(data), "lasso", "bootstrap",
-                       data_type_header=r"Bootstrap")
+    # plot_bias_variance(cp.deepcopy(data), "ols", "mccv",
+    #                    data_type_header=r"MC-CV")
+    # plot_bias_variance(cp.deepcopy(data), "ridge", "kfoldcv",
+    #                    data_type_header=r"$k$-fold CV")
+    # plot_bias_variance(cp.deepcopy(data), "lasso", "bootstrap",
+    #                    data_type_header=r"Bootstrap")
 
-    heat_map(cp.deepcopy(ridge_data), "ridge",
-             5, stat="r2", stat_latex=r"$R^2$")
-    heat_map(cp.deepcopy(ridge_data), "ridge",
-             5, stat="mse", stat_latex=r"MSE")
-    heat_map(cp.deepcopy(ridge_data), "ridge",
-             5, stat="bias", stat_latex=r"Bias$^2$")
-    heat_map(cp.deepcopy(ridge_data), "ridge",
-             5, stat="var", stat_latex=r"Var")
+    # heat_map(cp.deepcopy(ridge_data), "ridge",
+    #          5, stat="r2", stat_latex=r"$R^2$")
+    # heat_map(cp.deepcopy(ridge_data), "ridge",
+    #          5, stat="mse", stat_latex=r"MSE")
+    # heat_map(cp.deepcopy(ridge_data), "ridge",
+    #          5, stat="bias", stat_latex=r"Bias$^2$")
+    # heat_map(cp.deepcopy(ridge_data), "ridge",
+    #          5, stat="var", stat_latex=r"Var")
 
-    heat_map(cp.deepcopy(lasso_data), "lasso",
-             5, stat="r2", stat_latex=r"$R^2$")
-    heat_map(cp.deepcopy(lasso_data), "lasso",
-             5, stat="mse", stat_latex=r"MSE")
-    heat_map(cp.deepcopy(lasso_data), "lasso",
-             5, stat="bias", stat_latex=r"Bias$^2$")
-    heat_map(cp.deepcopy(lasso_data), "lasso",
-             5, stat="var", stat_latex=r"Var")
+    # heat_map(cp.deepcopy(lasso_data), "lasso",
+    #          5, stat="r2", stat_latex=r"$R^2$")
+    # heat_map(cp.deepcopy(lasso_data), "lasso",
+    #          5, stat="mse", stat_latex=r"MSE")
+    # heat_map(cp.deepcopy(lasso_data), "lasso",
+    #          5, stat="bias", stat_latex=r"Bias$^2$")
+    # heat_map(cp.deepcopy(lasso_data), "lasso",
+    #          5, stat="var", stat_latex=r"Var")
 
     # TODO: make a find_optimal_alpha()
 
@@ -219,8 +219,34 @@ def select_data(data, sort_by="", data_type="regression", stats_to_select=[],
         {k: np.asarray(v) for k, v in new_data.items()}
 
 
-def plot_beta_values(data, noise=0.0, deg=5, reg_type=""):
-    pass
+def plot_beta_values(data_, noise=0.0, deg=5, data_type="", reg_type=""):
+    data = []
+    available_stats = ["r2", "mse", "bias", "var"]
+    # Gets noise values
+    new_data = filter_data(
+        data_, sort_by="alpha", data_type=data_type,
+        property_dict={"degree": deg, "method": "manual", "reg_type": reg_type})
+
+    # for i, d in enumerate(new_data):
+    #     print(i, d.keys(), d["method"], d["degree"], d["noise"],
+    #           d["reg_type"], d["alpha"], d["data"].keys())
+
+    noise_values, _ = select_data(new_data, "noise", data_type=data_type,
+                                  stats_to_select=available_stats)
+
+    alpha_values, _ = select_data(new_data, "alpha", data_type=data_type,
+                                  stats_to_select=available_stats)
+
+    alpha_values = sorted(list(set(alpha_values)))
+    noise_values = sorted(list(set(noise_values)))
+    plot_data = np.empty((len(alpha_values), len(noise_values)))
+
+    for i, alpha in enumerate(alpha_values):
+        for j, noise in enumerate(noise_values):
+            for d in new_data:
+                if d["noise"] == noise and d["alpha"] == alpha:
+                    # print(d["data"]["regression"][stat])
+                    plot_data[i, j] = d["data"]["regression"][stat]
 
 
 def plot_argx_argy(data, x_arg, y_arg, x_arg_latex="", y_arg_latex="",
@@ -328,6 +354,7 @@ def plot_bias_variance_all(data_, data_type, data_type_header="",
         stats_to_select=["r2", "mse", "bias", "var"])
 
     degree_values = sorted(list(set(degree_values)))
+    print (degree_values)
 
     ols_values = np.empty((len(degree_values), 3))
     ridge_values = np.empty((len(degree_values), 3))
@@ -341,32 +368,32 @@ def plot_bias_variance_all(data_, data_type, data_type_header="",
 
     fig = plt.figure()
     ax1 = fig.add_subplot(311)
-    ax1.plot(degree_values[:max_degree],
-             ols_values[:max_degree, 0], "-o", label=r"MSE")
-    ax1.plot(degree_values[:max_degree],
-             ols_values[:max_degree, 1], "-.", label=r"Bias$^2$")
-    ax1.plot(degree_values[:max_degree],
-             ols_values[:max_degree, 2], "-x", label=r"Var")
+    ax1.plot(degree_values[:max_degree+1],
+             ols_values[:max_degree+1, 0], "-o", label=r"MSE")
+    ax1.plot(degree_values[:max_degree+1],
+             ols_values[:max_degree+1, 1], "-.", label=r"Bias$^2$")
+    ax1.plot(degree_values[:max_degree+1],
+             ols_values[:max_degree+1, 2], "-x", label=r"Var")
     ax1.legend()
     ax1.grid(True)
 
     ax2 = fig.add_subplot(312)
-    ax2.plot(degree_values[:max_degree],
-             ridge_values[:max_degree, 0], "-o", label=r"MSE")
-    ax2.plot(degree_values[:max_degree],
-             ridge_values[:max_degree, 1], "-.", label=r"Bias$^2$")
-    ax2.plot(degree_values[:max_degree],
-             ridge_values[:max_degree, 2], "-x", label=r"Var")
+    ax2.plot(degree_values[:max_degree+1],
+             ridge_values[:max_degree+1, 0], "-o", label=r"MSE")
+    ax2.plot(degree_values[:max_degree+1],
+             ridge_values[:max_degree+1, 1], "-.", label=r"Bias$^2$")
+    ax2.plot(degree_values[:max_degree+1],
+             ridge_values[:max_degree+1, 2], "-x", label=r"Var")
     ax2.legend()
     ax2.grid(True)
 
     ax3 = fig.add_subplot(313)
-    ax3.plot(degree_values[:max_degree],
-             lasso_values[:max_degree, 0], "-o", label=r"MSE")
-    ax3.plot(degree_values[:max_degree],
-             lasso_values[:max_degree, 1], "-.", label=r"Bias$^2$")
-    ax3.plot(degree_values[:max_degree],
-             lasso_values[:max_degree, 2], "-x", label=r"Var")
+    ax3.plot(degree_values[:max_degree+1],
+             lasso_values[:max_degree+1, 0], "-o", label=r"MSE")
+    ax3.plot(degree_values[:max_degree+1],
+             lasso_values[:max_degree+1, 1], "-.", label=r"Bias$^2$")
+    ax3.plot(degree_values[:max_degree+1],
+             lasso_values[:max_degree+1, 2], "-x", label=r"Var")
     ax3.legend()
     ax3.grid(True)
 
@@ -381,9 +408,13 @@ def plot_bias_variance_all(data_, data_type, data_type_header="",
 
     ax3.set_xlabel(r"Polynomial degree")
 
+    ax1.set_xticks(degree_values[:max_degree+1])
     ax1.set_xticklabels([])
+    ax2.set_xticks(degree_values[:max_degree+1])
     ax2.set_xticklabels([])
-    ax3.set_xticklabels(degree_values[:max_degree], fontsize=tick_param_fs)
+    ax3.set_xticks(degree_values[:max_degree+1])
+    ax3.set_xticklabels([0] + degree_values[:max_degree+1], fontsize=tick_param_fs)
+    print(degree_values[:max_degree+1])
 
     figname = "../fig/bias_variance_tradeoff_all_{0:s}_{1:s}.pdf".format(
         data_type, stat)
@@ -416,21 +447,24 @@ def plot_bias_variance(data_, regression_type, data_type,
 
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
-    ax1.plot(degree_values[:max_degree],
-             reg_values[:max_degree, 0], "-o", label=r"MSE")
-    ax1.plot(degree_values[:max_degree],
-             reg_values[:max_degree, 1], "-.", label=r"Bias$^2$")
-    ax1.plot(degree_values[:max_degree],
-             reg_values[:max_degree, 2], "-x", label=r"Var")
+    ax1.plot(degree_values[:max_degree+1],
+             reg_values[:max_degree+1, 0], "-o", label=r"MSE")
+    ax1.plot(degree_values[:max_degree+1],
+             reg_values[:max_degree+1, 1], "-.", label=r"Bias$^2$")
+    ax1.plot(degree_values[:max_degree+1],
+             reg_values[:max_degree+1, 2], "-x", label=r"Var")
     ax1.legend()
     ax1.grid(True)
 
     ax1.set_title(r"{0:s}".format(data_type_header))
     ax1.set_xlabel(r"Polynomial degree")
-    ax1.set_xticklabels(degree_values[:max_degree], fontsize=tick_param_fs)
+
+    # ax1.set_xticks(np.arange(z.shape[1]) + .5)
+    ax1.set_xticks(degree_values[:max_degree+1])
+    ax1.set_xticklabels([0] + degree_values[:max_degree+1], fontsize=tick_param_fs)
     # ax1.set_yscale("log")
 
-    figname = "../fig/bias_variance_tradeoff_{0:s}_{1:s}_{2:}.pdf".format(
+    figname = "../fig/bias_var iance_tradeoff_{0:s}_{1:s}_{2:}.pdf".format(
         data_type, stat, regression_type)
     fig.savefig(figname)
     print("Figure saved at {}".format(figname))
