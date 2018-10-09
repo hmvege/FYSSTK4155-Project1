@@ -40,15 +40,14 @@ def print_elem(elem):
               "bias:", elem["data"]["regression"]["bias"])
 
 
-def franke_analysis(*data):
-    data = data[0]
+def analysis(data):
 
     ols_data = []
     ridge_data = []
     lasso_data = []
 
-    print(data[0].keys(), data[0]["data"].keys(),
-          data[0]["data"]["regression"].keys())
+    # print(data[0].keys(), data[0]["data"].keys(),
+    #       data[0]["data"]["regression"].keys())
 
     for elem in data:
         # print_elem(elem)
@@ -63,8 +62,8 @@ def franke_analysis(*data):
             lasso_data.append(elem)
             # print_elem(elem)
 
-    print(lasso_data[0].keys(), lasso_data[0]["data"].keys(),
-          lasso_data[0]["data"]["regression"].keys())
+    # print(lasso_data[0].keys(), lasso_data[0]["data"].keys(),
+    #       lasso_data[0]["data"]["regression"].keys())
 
     noise_values, _ = select_data(ridge_data, "noise", data_type="regression",
                                   stats_to_select="r2")
@@ -265,9 +264,6 @@ def plot_beta_values(data_, noise=0.0, alpha=0.1, deg=5, data_type="",
             if d_["degree"] == deg_:
                 return d_
 
-    print(ols_data[0].keys(), ols_data[0]["data"].keys(),
-          ols_data[0]["data"]["regression"].keys())
-
     ols_data_arr = np.array([
         select_deg(ols_data, deg)["data"][data_type]["beta_coefs"],
         np.sqrt(select_deg(ols_data, deg)[
@@ -447,7 +443,6 @@ def plot_bias_variance_all(data_, data_type, data_type_header="",
         stats_to_select=["r2", "mse", "bias", "var"])
 
     degree_values = sorted(list(set(degree_values)))
-    print(degree_values)
 
     ols_values = np.empty((len(degree_values), 3))
     ridge_values = np.empty((len(degree_values), 3))
@@ -646,11 +641,8 @@ def find_optimal_parameters(data):
 
 
 def main():
-    franke_analysis(
-        # load_pickle("franke_func.pickle"),
-        load_pickle("franke_func_ols_final4.pickle")
-    )
-    # terrain_analysis(load_pickle("franke_func.pickle"))
+    analysis(load_pickle("franke_func_ols_final4.pickle"))
+    # analysis(load_pickle("franke_func.pickle"))
 
 
 if __name__ == '__main__':
