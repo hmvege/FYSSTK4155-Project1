@@ -21,9 +21,9 @@ import imageio
 
 
 def main():
-    franke_func_tasks()
+    franke_func_tasks("franke_func_ols_final4.pickle")
 
-    # real_data()
+    # real_data("terrain_data1.pickle")
 
 
 def surface_plot(surface, title):
@@ -40,7 +40,7 @@ def surface_plot(surface, title):
     plt.title(title)
 
 
-def real_data():
+def real_data(pickle_fname="terrain_data_default.pickle"):
     """Part d)-e)."""
 
     t3 = time.clock()
@@ -115,7 +115,6 @@ def real_data():
                                  test_percent, alpha_values, print_results,
                                  noise_sigma_values)
 
-    pickle_fname = "real_data.pickle"
     with open(pickle_fname, "wb") as f:
         pickle.dump(data, f)
         print("Data pickled and dumped to: {:s}".format(pickle_fname))
@@ -130,19 +129,19 @@ def real_data():
     print("*"*100)
 
 
-def franke_func_tasks():
+def franke_func_tasks(pickle_fname="franke_data_default.pickle"):
     """Part a)-c)."""
 
     t1 = time.clock()
 
     # Generates data
-    N_data_points = 10  # 100
+    N_data_points = 100  # 100
     x = np.sort(np.random.uniform(0, 1, N_data_points))
     y = np.sort(np.random.uniform(0, 1, N_data_points))
 
     # Analysis constants
-    N_bs_resampling = 20  # 1000
-    N_cv_bs = 10 # 100
+    N_bs_resampling = 200  # 1000
+    N_cv_bs = 100  # 100
     k_splits = 4
     test_percent = 0.4
     print_results = True
@@ -158,7 +157,6 @@ def franke_func_tasks():
     # print(alpha_values)
     # print(np.logspace(-4, 4, 20))
     # exit(1)
-
 
     np.random.seed(1234)
 
@@ -183,7 +181,6 @@ def franke_func_tasks():
                                  test_percent, alpha_values, print_results,
                                  noise_sigma_values)
 
-    pickle_fname = "franke_func_ols_final3.pickle"
     with open(pickle_fname, "wb") as f:
         pickle.dump(data, f)
         print("Data pickled and dumped to: {:s}".format(pickle_fname))
@@ -214,6 +211,10 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
             print("\n**** Polynom degree: {} ****".format(deg))
 
             for noise in noise_sigma_values:
+
+                print("\n**** OLS Noise: {0:.4f} Degree: {1:d}".format(
+                    float(noise), deg))
+
                 z += np.random.normal(0, noise, size=z.shape)
                 if "manual" in regression_implementation:
                     ols = reggen.ManualOLS(x, y, z, deg=deg,
@@ -230,31 +231,33 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                         "data": cp.deepcopy(ols.data),
                     })
 
-                # if "sklearn" in regression_implementation:
-                #     sk_ols = reggen.SKLearnOLS(x, y, z, deg=degree,
-                #                                N_bs=N_bs_resampling,
-                #                                N_cv_bs=N_cv_bs,
-                #                                test_percent=test_percent,
-                #                                print_results=print_results)
+                if "sklearn" in regression_implementation:
+                    sk_ols = reggen.SKLearnOLS(x, y, z, deg=deg,
+                                               N_bs=N_bs_resampling,
+                                               N_cv_bs=N_cv_bs,
+                                               test_percent=test_percent,
+                                               print_results=print_results)
 
-                #     data.append({
-                #         "reg_type": "ols",
-                #         "degree": degree,
-                #         "noise": noise,
-                #         "method": "sklearn",
-                #         "data": cp.deepcopy(sk_ols.data),
-                #     })
+                    data.append({
+                        "reg_type": "ols",
+                        "degree": deg,
+                        "noise": noise,
+                        "method": "sklearn",
+                        "data": cp.deepcopy(sk_ols.data),
+                    })
 
     if "ridge" in regression_methods:
-        print("\nRidge Regression. N ridge regressions: ", 
-            len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values))
+        print("\nRidge Regression. N ridge regressions: ",
+              len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values))
 
         for noise in noise_sigma_values:
             z += np.random.normal(0, noise, size=z.shape)
             for deg in polynom_degrees:
                 print("\n**** Polynom degree: {} ****".format(deg))
                 for alpha in alpha_values:
-                    print("\n**** Ridge Lambda: {:-e} ****".format(alpha))
+                    print(("\n**** Ridge Lambda: {0:-e} Noise: {1:.4f} "
+                           "Degree: {2:d} ****").format(
+                        alpha, float(noise), deg))
 
                     if "manual" in regression_implementation:
                         ridge = \
@@ -271,31 +274,33 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                             "data": cp.deepcopy(ridge.data),
                         })
 
-                    # if "sklearn" in regression_implementation:
-                    #     sk_ridge = \
-                    #         reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
-                    #                             test_percent=test_percent,
-                    #                             print_results=print_results)
+                    if "sklearn" in regression_implementation:
+                        sk_ridge = \
+                            reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
+                                                test_percent=test_percent,
+                                                print_results=print_results)
 
-                    #     data.append({
-                    #         "reg_type": "ridge",
-                    #         "degree": degree,
-                    #         "noise": noise,
-                    #         "alpha": alpha,
-                    #         "method": "sklearn",
-                    #         "data": cp.deepcopy(sk_ridge.data),
-                    #     })
+                        data.append({
+                            "reg_type": "ridge",
+                            "degree": deg,
+                            "noise": noise,
+                            "alpha": alpha,
+                            "method": "sklearn",
+                            "data": cp.deepcopy(sk_ridge.data),
+                        })
 
     if "lasso" in regression_methods:
-        print("\nLasso Regression. N lasso regressions: ", 
-            len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values))
+        print("\nLasso Regression. N lasso regressions: ",
+              len(noise_sigma_values)*len(polynom_degrees)*len(alpha_values))
 
         for noise in noise_sigma_values:
             z += np.random.normal(0, noise, size=z.shape)
             for deg in polynom_degrees:
                 print("\n**** Polynom degree: {} ****".format(deg))
                 for alpha in alpha_values:
-                    print("\n**** Lasso Lambda: {:-e} ****".format(alpha))
+                    print(("\n**** Lasso Lambda: {0:-e} Noise: {1:.4} "
+                           "Degree: {2:d} ****").format(
+                        alpha, float(noise), deg))
 
                     # if "manual" in regression_implementation:
                     #     reggen.task_c_manual(x, y, z, alpha, deg=deg,
