@@ -172,8 +172,9 @@ def franke_func_tasks(pickle_fname="franke_data_default.pickle"):
     x, y = np.meshgrid(x, y)
     z = ff_tools.FrankeFunction(x, y)
 
-    # Stores data for plotting
-    np.save("_various_scripts/data", np.c_[x, y, z])
+    # # Stores data for plotting
+    # np.save("_various_scripts/data", np.c_[x, y, z]) # automatic .npy format
+    # print("Saved data")
 
     data = run_regrssion_methods(regression_methods, polynom_degrees,
                                  regression_implementation,
