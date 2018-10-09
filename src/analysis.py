@@ -80,7 +80,11 @@ def franke_analysis(*data):
 
     # create_beta_table(ols_data)
 
+    
+    # plot_beta_values(data, noise=0.0, deg=5, data_type="bootstrap", reg_type="ols")
     plot_beta_values(data, noise=0.0, deg=5, data_type="bootstrap", reg_type="ridge")
+    # plot_beta_values(data, noise=0.0, deg=5, data_type="bootstrap", reg_type="lasso")
+    
 
     # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
     # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
@@ -160,6 +164,7 @@ def filter_data2(data, noise_values=[], alpha_values=[], degree_values=[],
 def filter_data(data, sort_by="", data_type="", property_dict={}):
     """Only selects items with what provided as arguments."""
     new_data = []
+
     for d in sorted(data, key=lambda s: s[sort_by]):
         for key, val in property_dict.items():
 
@@ -226,7 +231,10 @@ def plot_beta_values(data_, noise=0.0, deg=5, data_type="", reg_type=""):
     available_stats = ["r2", "mse", "bias", "var"]
     # Gets noise values
     new_data = filter_data(
-        data_, sort_by="alpha", data_type=data_type,
+        data_, "noise", {"degree": 5, "method": "manual", "reg_type": reg_type})
+
+    new_data = filter_data(
+        new_data, sort_by="alpha", data_type=data_type,
         property_dict={"degree": deg, "method": "manual", "reg_type": reg_type})
 
     # for i, d in enumerate(new_data):

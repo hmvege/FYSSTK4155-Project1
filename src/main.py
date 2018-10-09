@@ -146,7 +146,7 @@ def franke_func_tasks(pickle_fname="franke_data_default.pickle"):
     test_percent = 0.4
     print_results = False
 
-    noise_sigma_values = np.linspace(0, 2.0, 10)
+    noise_sigma_values = np.linspace(0, 1.0, 10)
     noise_mu = 0
     polynom_degrees = [1, 2, 3, 4, 5, 6, 7, 8]
     # alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3]
@@ -231,20 +231,20 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                         "data": cp.deepcopy(ols.data),
                     })
 
-                if "sklearn" in regression_implementation:
-                    sk_ols = reggen.SKLearnOLS(x, y, z, deg=deg,
-                                               N_bs=N_bs_resampling,
-                                               N_cv_bs=N_cv_bs,
-                                               test_percent=test_percent,
-                                               print_results=print_results)
+                # if "sklearn" in regression_implementation:
+                #     sk_ols = reggen.SKLearnOLS(x, y, z, deg=deg,
+                #                                N_bs=N_bs_resampling,
+                #                                N_cv_bs=N_cv_bs,
+                #                                test_percent=test_percent,
+                #                                print_results=print_results)
 
-                    data.append({
-                        "reg_type": "ols",
-                        "degree": deg,
-                        "noise": noise,
-                        "method": "sklearn",
-                        "data": cp.deepcopy(sk_ols.data),
-                    })
+                #     data.append({
+                #         "reg_type": "ols",
+                #         "degree": deg,
+                #         "noise": noise,
+                #         "method": "sklearn",
+                #         "data": cp.deepcopy(sk_ols.data),
+                #     })
 
     if "ridge" in regression_methods:
         print("\nRidge Regression. N ridge regressions: ",
@@ -274,20 +274,20 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                             "data": cp.deepcopy(ridge.data),
                         })
 
-                    if "sklearn" in regression_implementation:
-                        sk_ridge = \
-                            reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
-                                                test_percent=test_percent,
-                                                print_results=print_results)
+                    # if "sklearn" in regression_implementation:
+                    #     sk_ridge = \
+                    #         reggen.SKLearnRidge(x, y, z, alpha, deg=deg,
+                    #                             test_percent=test_percent,
+                    #                             print_results=print_results)
 
-                        data.append({
-                            "reg_type": "ridge",
-                            "degree": deg,
-                            "noise": noise,
-                            "alpha": alpha,
-                            "method": "sklearn",
-                            "data": cp.deepcopy(sk_ridge.data),
-                        })
+                    #     data.append({
+                    #         "reg_type": "ridge",
+                    #         "degree": deg,
+                    #         "noise": noise,
+                    #         "alpha": alpha,
+                    #         "method": "sklearn",
+                    #         "data": cp.deepcopy(sk_ridge.data),
+                    #     })
 
     if "lasso" in regression_methods:
         print("\nLasso Regression. N lasso regressions: ",
