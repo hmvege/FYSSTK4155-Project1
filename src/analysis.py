@@ -94,28 +94,28 @@ def analysis(data, analysis_name):
 
     # create_beta_table(ols_data)
 
-    for alpha_ in alpha_values:
-        for noise_ in noise_values:
-            for deg_ in degree_values:
-                plot_beta_values(data, noise=noise_, deg=deg_,
-                                 alpha=alpha_, data_type="bootstrap",
-                                 noise_values=noise_values,
-                                 alpha_values=alpha_values,
-                                 aname=analysis_name)
+    # for alpha_ in alpha_values:
+    #     for noise_ in noise_values:
+    #         for deg_ in degree_values:
+    #             plot_beta_values(data, noise=noise_, deg=deg_,
+    #                              alpha=alpha_, data_type="bootstrap",
+    #                              noise_values=noise_values,
+    #                              alpha_values=alpha_values,
+    #                              aname=analysis_name)
 
-    for deg_ in degree_values[4:]:
-        plot_R2_noise(cp.deepcopy(data), deg=deg_,
-                      reg_type="ols", aname=analysis_name)
-        for alpha_ in alpha_values:
-            plot_R2_noise(cp.deepcopy(data), deg=deg_, alpha=alpha_,
-                          reg_type="ridge", aname=analysis_name)
-            plot_R2_noise(cp.deepcopy(data), deg=deg_, alpha=alpha_,
-                          reg_type="lasso", aname=analysis_name)
+    # for deg_ in degree_values[4:]:
+    #     plot_R2_noise(cp.deepcopy(data), deg=deg_,
+    #                   reg_type="ols", aname=analysis_name)
+    #     for alpha_ in alpha_values:
+    #         plot_R2_noise(cp.deepcopy(data), deg=deg_, alpha=alpha_,
+    #                       reg_type="ridge", aname=analysis_name)
+    #         plot_R2_noise(cp.deepcopy(data), deg=deg_, alpha=alpha_,
+    #                       reg_type="lasso", aname=analysis_name)
 
-    plot_argx_argy(cp.deepcopy(data), "noise", "r2",
-                   x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
-                   y_arg_latex=r"$R^2$", deg=5, reg_type="lasso",
-                   aname=analysis_name)
+    # plot_argx_argy(cp.deepcopy(data), "noise", "r2",
+    #                x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
+    #                y_arg_latex=r"$R^2$", deg=5, reg_type="lasso",
+    #                aname=analysis_name)
 
     for dtype_ in data_type_values:
 

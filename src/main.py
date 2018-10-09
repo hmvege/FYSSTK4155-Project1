@@ -21,9 +21,9 @@ import imageio
 
 
 def main():
-    franke_func_tasks("franke_func_ols_final4.pickle")
+    franke_func_tasks("franke_func_data_final10.pickle")
 
-    # real_data("terrain_data1.pickle")
+    real_data("terrain_data2.pickle")
 
 
 def surface_plot(surface, title):
@@ -94,9 +94,10 @@ def real_data(pickle_fname="terrain_data_default.pickle"):
     test_percent = 0.4
     print_results = False
 
-    noise_sigma_values = np.linspace(0, 0.5, 15)
-    polynom_degrees = [1, 2, 3, 4, 5]
-    alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4]
+    # noise_sigma_values = np.linspace(0, 0.5, 15)
+    noise_sigma_values = [0]
+    polynom_degrees = [1, 2, 3, 4, 5, 6]
+    alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2]
 
     np.random.seed(1234)
 
@@ -148,14 +149,14 @@ def franke_func_tasks(pickle_fname="franke_data_default.pickle"):
 
     noise_mu = 0
 
-    # noise_sigma_values = np.linspace(0, 1.0, 10)
-    # polynom_degrees = [1, 2, 3, 4, 5, 6, 7, 8]
-    # alpha_values = [1e-4, 0.5e-3, 1e-3, 0.5e-2, 1e-2, 0.5e-1,
-    #                 1e-1, 0.5, 1, 0.5e1, 1e1, 0.5e2, 1e2, 0.5e3, 1e3]
+    noise_sigma_values = np.linspace(0, 1.0, 10)
+    polynom_degrees = [1, 2, 3, 4, 5, 6, 7, 8]
+    alpha_values = [1e-4, 0.5e-3, 1e-3, 0.5e-2, 1e-2, 0.5e-1,
+                    1e-1, 0.5, 1, 0.5e1, 1e1, 0.5e2, 1e2, 0.5e3, 1e3]
 
-    noise_sigma_values = np.linspace(0, 1.0, 3)
-    polynom_degrees = [5]
-    alpha_values = [1e-3, 1e-2, 1e-1, 1]
+    # noise_sigma_values = np.linspace(0, 1.0, 3)
+    # polynom_degrees = [5]
+    # alpha_values = [1e-3, 1e-2, 1e-1, 1]
     # alpha_values = [0.1, 0.2, 0.3, 0.4, 0.5]
 
     # print(alpha_values)
