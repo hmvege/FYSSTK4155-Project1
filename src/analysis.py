@@ -7,11 +7,11 @@ import copy as cp
 from lib.table_printer import TablePrinter
 from lib.sciprint import sciprint
 
-# Proper LaTeX font
-# import matplotlib as mpl
-# mpl.rc("text", usetex=True)
-# mpl.rc("font", **{"family": "sans-serif", "serif": ["Computer Modern"]})
-# mpl.rcParams["font.family"] += ["serif"]
+##Proper LaTeX font
+import matplotlib as mpl
+mpl.rc("text", usetex=True)
+mpl.rc("font", **{"family": "sans-serif", "serif": ["Computer Modern"]})
+mpl.rcParams["font.family"] += ["serif"]
 
 
 def load_pickle(picke_file_name):
@@ -80,14 +80,22 @@ def franke_analysis(*data):
 
     # create_beta_table(ols_data)
 
-    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols"):
-    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge"):
-    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso"):
+    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
+    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
+    plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso")
 
-    plot_bias_variance(cp.deepcopy(data), "mccv", data_type_header=r"MC-CV")
-    plot_bias_variance(cp.deepcopy(data), "kfoldcv",
+    plot_argx_argy(cp.deepcopy(data), "noise", "r2",
+                   x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
+                   y_arg_latex=r"$R^2$", deg=5, reg_type="lasso")
+
+    plot_bias_variance_all(cp.deepcopy(data), "mccv",
+                           data_type_header=r"MC-CV")
+
+    plot_bias_variance(cp.deepcopy(data), "ols", "mccv",
+                       data_type_header=r"MC-CV")
+    plot_bias_variance(cp.deepcopy(data), "ridge", "kfoldcv",
                        data_type_header=r"$k$-fold CV")
-    plot_bias_variance(cp.deepcopy(data), "bootstrap",
+    plot_bias_variance(cp.deepcopy(data), "lasso", "bootstrap",
                        data_type_header=r"Bootstrap")
 
     heat_map(cp.deepcopy(ridge_data), "ridge",
@@ -109,6 +117,7 @@ def franke_analysis(*data):
              5, stat="var", stat_latex=r"Var")
 
     # TODO: make a find_optimal_alpha()
+
 
 def create_beta_table(data):
     header = [r"$R^2$", "MSE", r"Bias$^2$", '$\beta_0$',
@@ -210,6 +219,55 @@ def select_data(data, sort_by="", data_type="regression", stats_to_select=[],
         {k: np.asarray(v) for k, v in new_data.items()}
 
 
+def plot_beta_values(data, noise=0.0, deg=5, reg_type=""):
+    pass
+
+
+def plot_argx_argy(data, x_arg, y_arg, x_arg_latex="", y_arg_latex="",
+                   deg=5, reg_type="ols"):
+    new_data = filter_data(
+        data, x_arg, {"degree": 5, "method": "manual", "reg_type": reg_type})
+    data_dict_array = {
+        reg: select_data(
+            new_data, x_arg, data_type=reg,
+            stats_to_select=["r2", "mse", "bias", "var"])
+        for reg in data[0]["data"].keys()
+    }
+    x_arg_values, _ = select_data(
+        new_data, x_arg, data_type="regression",
+        stats_to_select=["r2", "mse", "bias", "var"])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(x_arg_values, data_dict_array["regression"]
+            [1][y_arg], label=r"OLS Regression")
+    ax.plot(x_arg_values,
+            data_dict_array["kfoldcv"][1][y_arg], label=r"$k$-fold CV")
+    ax.plot(x_arg_values, data_dict_array["mccv"][1][y_arg], label=r"MCCV")
+    ax.plot(x_arg_values,
+            data_dict_array["bootstrap"][1][y_arg], label=r"Bootstrap")
+
+    if x_arg_latex == "":
+        ax.set_xlabel(x_arg)
+    else:
+        ax.set_xlabel(x_arg_latex)
+    if y_arg_latex == "":
+        ax.set_xlabel(y_arg)
+    # else:
+        ax.set_ylabel(y_arg_latex)
+
+    # ax.set_yscale("log")
+    ax.legend()
+    ax.grid(True)
+
+    figname = "../fig/{0:s}_vs_{1:s}_deg{2:d}_{3:s}.pdf".format(
+        x_arg, y_arg, deg, reg_type)
+    fig.savefig(figname)
+    print("Figure saved at {}".format(figname))
+
+    # plt.show()
+
+
 def plot_R2_noise(data, deg=5, reg_type="ols"):
     new_data = filter_data(
         data, "noise", {"degree": 5, "method": "manual", "reg_type": reg_type})
@@ -236,14 +294,16 @@ def plot_R2_noise(data, deg=5, reg_type="ols"):
     ax.legend()
     ax.grid(True)
 
-    figname = "../fig/noise_vs_r2_deg{0:d}_reg{1:s}".format(deg, reg_type)
+    figname = "../fig/noise_vs_r2_deg{0:d}_{1:s}.pdf".format(deg, reg_type)
     fig.savefig(figname)
     print("Figure saved at {}".format(figname))
 
     # plt.show()
 
 
-def plot_bias_variance_all(data_, data_type, data_type_header=""):
+def plot_bias_variance_all(data_, data_type, data_type_header="",
+                           tick_param_fs=None):
+
     ols_data = filter_data(
         data_, sort_by="degree", data_type="regression",
         property_dict={
@@ -321,15 +381,19 @@ def plot_bias_variance_all(data_, data_type, data_type_header=""):
 
     ax3.set_xlabel(r"Polynomial degree")
 
-    figname = "../fig/bias_variance_tradeoff_{0:s}_{1:s}.pdf".format(
-            data_type, stat)
+    ax1.set_xticklabels([])
+    ax2.set_xticklabels([])
+    ax3.set_xticklabels(degree_values[:max_degree], fontsize=tick_param_fs)
+
+    figname = "../fig/bias_variance_tradeoff_all_{0:s}_{1:s}.pdf".format(
+        data_type, stat)
     fig.savefig(figname)
     print("Figure saved at {}".format(figname))
     # plt.show()
 
 
-def plot_bias_variance_all(data_, regression_type, data_type,
-                           data_type_header=""):
+def plot_bias_variance(data_, regression_type, data_type,
+                       data_type_header="", tick_param_fs=None):
 
     data = filter_data(
         data_, sort_by="degree", data_type="regression",
@@ -353,16 +417,17 @@ def plot_bias_variance_all(data_, regression_type, data_type,
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax1.plot(degree_values[:max_degree],
-             ols_values[:max_degree, 0], "-o", label=r"MSE")
+             reg_values[:max_degree, 0], "-o", label=r"MSE")
     ax1.plot(degree_values[:max_degree],
-             ols_values[:max_degree, 1], "-.", label=r"Bias$^2$")
+             reg_values[:max_degree, 1], "-.", label=r"Bias$^2$")
     ax1.plot(degree_values[:max_degree],
-             ols_values[:max_degree, 2], "-x", label=r"Var")
+             reg_values[:max_degree, 2], "-x", label=r"Var")
     ax1.legend()
     ax1.grid(True)
 
     ax1.set_title(r"{0:s}".format(data_type_header))
     ax1.set_xlabel(r"Polynomial degree")
+    ax1.set_xticklabels(degree_values[:max_degree], fontsize=tick_param_fs)
     # ax1.set_yscale("log")
 
     figname = "../fig/bias_variance_tradeoff_{0:s}_{1:s}_{2:}.pdf".format(
@@ -373,23 +438,29 @@ def plot_bias_variance_all(data_, regression_type, data_type,
     # exit(1)
 
 
-def heat_map(data_, reg_type, degree,
+def heat_map(data_, reg_type, degree, data_type="regression",
              stat="r2", stat_latex=r"$R^2$"):
+
+    if data_type == "regression" and stat == "var":
+        print("Stat var not available for regression.")
+        return 1
+
     data = []
+    available_stats = ["r2", "mse", "bias", "var"]
     # Gets noise values
     new_data = filter_data(
-        data_, sort_by="noise", data_type="regression",
+        data_, sort_by="noise", data_type=data_type,
         property_dict={"degree": 5, "method": "manual", "reg_type": reg_type})
 
     # for i, d in enumerate(new_data):
     #     print(i, d.keys(), d["method"], d["degree"], d["noise"],
     #           d["reg_type"], d["alpha"], d["data"].keys())
 
-    noise_values, _ = select_data(new_data, "noise", data_type="regression",
-                                  stats_to_select=["r2", "mse", "bias", "var"])
+    noise_values, _ = select_data(new_data, "noise", data_type=data_type,
+                                  stats_to_select=available_stats)
 
-    alpha_values, _ = select_data(new_data, "alpha", data_type="regression",
-                                  stats_to_select=["r2", "mse", "bias", "var"])
+    alpha_values, _ = select_data(new_data, "alpha", data_type=data_type,
+                                  stats_to_select=available_stats)
 
     # filter_data2(data_, degree_values=[5])
 
