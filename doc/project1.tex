@@ -11,7 +11,7 @@
 % \usepackage{subfigure}
 \usepackage{subcaption}
 
-
+\usepackage{tabularx}
 \usepackage{url}
 \usepackage{color}
 \usepackage{float}
@@ -20,11 +20,14 @@
 \usepackage{enumerate}
 \usepackage{bm}
 
+\usepackage[toc,page]{appendix}
 
 \usepackage{algorithm}
 \usepackage{algorithmicx}
 \usepackage{algpseudocode}
 
+% For customized hlines in tables
+\usepackage{ctable}
 
 % Correct way for typing C++
 \newcommand{\CC}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
@@ -251,6 +254,12 @@ with $\bar{\bm{y}}$ defined as
 \end{align*}
 
 
+\subsection{Determining the best fitting procedure}
+An ad-hoc method of determining the best fitting procedure will be used by looking at,
+\begin{align}
+    \mathrm{Score} = \sqrt{(1-R^2)^2 + (\mathrm{MSE})^2}
+    \label{eq:opt_fit}
+\end{align}
 
 \subsection{Bootstrapping}
 Bootstrapping is a resampling technique particularly useful for small datasets or observables with difficult-to-asses statistics\cite{efron1994introduction}. The bootstrap technique is inspired by the Jackknife method\cite{efron1981}, but differs since we randomly selects a $n$ new samples with replacement of the original dataset $\{y_i\}$ a total of $N_\mathrm{bs}$ times. We use the $N_\mathrm{bs}$ samples to find the MSE, variance and bias. 
@@ -308,25 +317,6 @@ The Franke function $F(x,y)$\eqref{eq:franke_function} maps coordinates $x$, $y$
     \label{fig:franke_function}
 \end{figure}
 
-The 
-
-\subsection{Modeling terrain}
-The terrain we have looked is from a region close to Stavanger in Norway, and can be viewed in figure \ref{fig:terrain_map_full} together with a subset of this region that can be viewed in the sub-figure, \ref{fig:terrain_patch}.
-
-\begin{figure}
-    \centering
-    \includegraphics[scale=1.0]{../fig/terrain_data.png}
-    \caption{Terrain data from a region close to Stavanger, Norway.}
-    \label{fig:terrain_map_full}
-\end{figure}
-
-\begin{figure}
-    \centering
-    \includegraphics[scale=0.8]{../fig/terrain_patch.pdf}
-    \caption{A subset of the region found in figure \ref{fig:terrain_map_full}.}
-    \label{fig:terrain_patch}
-\end{figure}
-
 In the figure we can see how the 
 \begin{figure}
     \centering
@@ -346,11 +336,71 @@ In the figure we can see how the
     \label{fig:mse_r2_heatmaps_terrain}
 \end{figure}
 
+% \begin{table}[H]
+%     \centering
+%     \begin{tabular}{l l l l l l} % 6 columns
+%         \specialrule{.1em}{.05em}{.05em}
+%         Score     & Degree    &$R^2$      & MSE                   & $\mathrm{Bias}^2$     & Var \\ \hline
+%         $0.022$      & 5         & $0.98$    & $1.76\cdot 10^{-3}$   & $1.75\cdot 10^{-3}$   & $1.61\cdot 10^{-6}$\\
+%         \specialrule{.1em}{.05em}{.05em}
+%     \end{tabular}
+%     \caption{Based on the different fitting procedures, these fit parameters were determined to be the best. The polynomial fitted was of degree $8$.}
+%     \label{tab:opt_result}
+% \end{table}
+% Optimal score for 
+% 'score': 0.021736874931834748, 'r2': 0.9783342056295437, 'mse': 0.0017564413167902263, 'bias': 0.0017489537578899248, 'var': 7.4875589003012656e-06, 'reg_type': 'ols', 'degree': 5,
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{../fig/franke_function_best_fit.png}
+    \caption{The optimal fit of the Franke function\eqref{eq:franke_function}, using OLS and polynomial of degree 5.}
+    \label{fig:optimal_fit_franke_func}
+\end{figure}
+
+
+\subsection{Modeling terrain}
+The terrain we have looked is from a region close to Stavanger in Norway, and can be viewed in figure \ref{fig:terrain_map_full} together with a subset of this region that can be viewed in the sub-figure, \ref{fig:terrain_patch}. We chose a grid of size $100 \times 250$.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=1.0]{../fig/terrain_data.png}
+    \caption{Terrain data from a region close to Stavanger, Norway.}
+    \label{fig:terrain_map_full}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.8]{../fig/terrain_patch.pdf}
+    \caption{A subset of the region found in figure \ref{fig:terrain_map_full}.}
+    \label{fig:terrain_patch}
+\end{figure}
+
+The optimal fit method was found by looking at the $R^2$ and MSE values\eqref{eq:opt_fit}. The result was that the Lasso method proved to be the most effective, as summed up in table \ref{tab:opt_result}. The figure which these parameters replicates in terms of terrain features can be viewed in figure \ref{fig:optimal_fit}.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l l l l l l l} % 6 columns
+        \specialrule{.1em}{.05em}{.05em}
+        Score     & Degree    &$R^2$      & MSE                   & $\mathrm{Bias}^2$     & Var                   & $\lambda$ \\ \hline
+        $0.12$      & $8$         & $0.88$    & $1.72\cdot 10^{-3}$   & $1.72\cdot 10^{-3}$   & $1.61\cdot 10^{-6}$   & $10^{-4}$ \\
+        \specialrule{.1em}{.05em}{.05em}
+    \end{tabular}
+    \caption{Based on the different fitting procedures, these fit parameters were determined to be the best. The polynomial fitted was of degree $8$.}
+    \label{tab:opt_result}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{../fig/lasso_fit_deg8.png}
+    \caption{The optimal fit of the terrain data. Determined to be by a polynomial of degree 8 with the Lasso method.}
+    \label{fig:optimal_fit}
+\end{figure}
+
 
 \section{Discussion and conclusion}
 
-\section{Appendix} \label{sec:appendix}
-\subsection{The Franke Function}
+
+\begin{appendices}
+\subsection{The Franke Function} \label{sec:appendix}
 The Franke function as given in \cite{franke1979critical},
 \begin{align}
     F(x,y) &= 0.75\exp\left(-\left(0.25\left(9x-2\right)^2\right) - 0.25\left(\left(9y-2\right)^2\right)\right) \\
@@ -359,6 +409,7 @@ The Franke function as given in \cite{franke1979critical},
     &= -0.2\exp\left(-\left(9x-4\right)^2 - \left(9y-7\right)^2\right)
     \label{eq:franke_function}
 \end{align}
+\end{appendices}
 
 \bibliography{bib/bibliography.bib}
 \bibliographystyle{plainnat}

@@ -301,7 +301,7 @@ def __test_ridge_regression(x, y, deg, alpha=1.0):
 
 def __test_regresssions():
     n = 100  # n cases, i = 0,1,2,...n-1
-    deg = 5
+    deg = 8
     noise_strength = 0.1
     np.random.seed(1)
     x = np.random.rand(n, 1)

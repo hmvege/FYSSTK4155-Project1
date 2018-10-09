@@ -3,16 +3,40 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pickle
 import copy as cp
-
+import os
 
 from lib.table_printer import TablePrinter
 from lib.sciprint import sciprint
+
+import lib.metrics as metrics
+import lib.bootstrap as bs
+import lib.regression as reg
+import lib.cross_validation as cv
+import lib.scikit_resampling as sk_resampling
+import sklearn.model_selection as sk_modsel
+import sklearn.preprocessing as sk_preproc
+import sklearn.linear_model as sk_model
+import sklearn.metrics as sk_metrics
+import sklearn.utils as sk_utils
+
+
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+
 
 # Proper LaTeX font
 import matplotlib as mpl
 mpl.rc("text", usetex=True)
 mpl.rc("font", **{"family": "sans-serif", "serif": ["Computer Modern"]})
 mpl.rcParams["font.family"] += ["serif"]
+
+def main():
+    # analysis(load_pickle("franke_func_data.pickle"), "franke1")
+    # analysis(load_pickle("franke_func_data_final11.pickle"), "franke2")
+    analysis(load_pickle("franke_func_data_final12.pickle"), "franke2")
+    # analysis(load_pickle("_ff_data_bak.pickle"), "franke3")
+    # analysis(load_pickle("terrain_data1.pickle"), "terrain1")
 
 
 def load_pickle(picke_file_name):
@@ -62,6 +86,7 @@ def analysis(data, analysis_name):
             lasso_data.append(elem)
             # print_elem(elem)
 
+    print (len(data))
     # print(lasso_data[0].keys(), lasso_data[0]["data"].keys(),
     #       lasso_data[0]["data"]["regression"].keys())
 
@@ -117,37 +142,157 @@ def analysis(data, analysis_name):
     #                y_arg_latex=r"$R^2$", deg=5, reg_type="lasso",
     #                aname=analysis_name)
 
-    for dtype_ in data_type_values:
+    # for dtype_ in data_type_values:
+    #     if dtype_[0]=="regression":
+    #         continue
+    #     plot_bias_variance_all(cp.deepcopy(data), "mccv",
+    #                            data_type_header=r"MC-CV",
+    #                            aname=analysis_name)
+    #     for reg_type_ in regression_types:
+    #         plot_bias_variance(cp.deepcopy(data), reg_type_, dtype_[0],
+    #                            data_type_header=dtype_[1],
+    #                            aname=analysis_name)
 
-        if dtype_[0]=="regression":
-            continue
+    # for deg_ in degree_values:
+    #     for dtype_ in data_type_values:
+    #         for stat_ in stats:
+    #             if stat_[0] == "var" and dtype_[0] == "regression":
+    #                 continue
+    #             else:
+    #                 heat_map(cp.deepcopy(ridge_data), "ridge",
+    #                          deg_, stat=stat_[0], stat_latex=stat_[1],
+    #                          data_type=dtype_[0], aname=analysis_name)
+    #                 heat_map(cp.deepcopy(lasso_data), "lasso",
+    #                          deg_, stat=stat_[0], stat_latex=stat_[1],
+    #                          data_type=dtype_[0], aname=analysis_name)
 
-        plot_bias_variance_all(cp.deepcopy(data), "mccv",
-                               data_type_header=r"MC-CV",
-                               aname=analysis_name)
-        for reg_type_ in regression_types:
-            
-
-            plot_bias_variance(cp.deepcopy(data), reg_type_, dtype_[0],
-                               data_type_header=dtype_[1],
-                               aname=analysis_name)
-
-    for deg_ in degree_values:
-        for dtype_ in data_type_values:
-            for stat_ in stats:
-
-                if stat_[0] == "var" and dtype_[0] == "regression":
-                    continue
-                else:
-
-                    heat_map(cp.deepcopy(ridge_data), "ridge",
-                             deg_, stat=stat_[0], stat_latex=stat_[1],
-                             data_type=dtype_[0], aname=analysis_name)
-                    heat_map(cp.deepcopy(lasso_data), "lasso",
-                             deg_, stat=stat_[0], stat_latex=stat_[1],
-                             data_type=dtype_[0], aname=analysis_name)
 
     # find_optimal_parameters(data, aname=analysis_name)
+
+    minvals = []# min of mse and r2
+
+    for i, d_ in enumerate(data):
+        dd = {}
+        r2 = d_["data"]["regression"]["r2"]
+        mse = d_["data"]["bootstrap"]["mse"]
+        score = np.sqrt((1-r2)**2 + mse**2)
+        dd["score"] = score
+        dd["r2"] = r2
+        dd["mse"] = mse
+        dd["bias"] = d_["data"]["bootstrap"]["bias"]
+        dd["var"] = d_["data"]["bootstrap"]["var"]
+        if "alpha" in d_:
+            dd["alpha"] = d_["alpha"]
+        if "noise" in d_:
+            dd["noise"] = d_["data"]["bootstrap"]["bias"]
+
+        dd["reg_type"] = d_["reg_type"]
+        dd["degree"] = d_["degree"]
+
+        dd["beta"] = d_["data"]["regression"]["beta_coefs"]
+
+        minvals.append(dd)
+
+    print("BEST ESTIMATE:")
+    opt_val = min(minvals, key=lambda d: d["score"])
+    print(opt_val)
+
+    if "franke" in analysis_name:
+        ### Franke func
+        Nrows, Ncols = 100, 100
+        ax_rows = np.linspace(0,1,Nrows)
+        ax_cols = np.linspace(0,1,Ncols)
+    else:        
+        ### Terrain data
+        Nrows, Ncols = 100, 250
+        ax_rows = np.arange(Nrows)
+        ax_cols = np.arange(Ncols)
+
+    [x, y] = np.meshgrid(ax_cols, ax_rows)
+
+    poly = sk_preproc.PolynomialFeatures(degree=opt_val["degree"], include_bias=True)
+    X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]))
+    opt_beta = opt_val["beta"]
+    z = X @ opt_beta
+
+    if "alpha" in opt_val:
+        figure_name = "../fig/{}_{}_{}".format(
+            opt_val["reg_type"],opt_val["degree"],opt_val["alpha"])
+    else:
+        figure_name = "../fig/{}_{}".format(
+            opt_val["reg_type"],opt_val["degree"])
+
+    plot_simple_surface(x, y, z.reshape(Nrows,Ncols), figure_name)
+
+
+
+    # for noise_ in noise_values:
+    #     minvals = []# min of mse and r2
+    #     print ("noise:", noise_)
+    #     for i, d_ in enumerate(data):
+    #         if noise_ != d_["noise"]: continue
+
+    #         dd = {}
+    #         r2 = d_["data"]["regression"]["r2"]
+    #         mse = d_["data"]["bootstrap"]["mse"]
+    #         score = np.sqrt((1-r2)**2 + mse**2)
+    #         dd["score"] = score
+    #         dd["r2"] = r2
+    #         dd["mse"] = mse
+    #         dd["bias"] = d_["data"]["bootstrap"]["bias"]
+    #         dd["var"] = d_["data"]["bootstrap"]["var"]
+    #         if "alpha" in d_:
+    #             dd["alpha"] = d_["alpha"]
+    #         if "noise" in d_:
+    #             dd["noise"] = d_["noise"]
+
+    #         dd["reg_type"] = d_["reg_type"]
+    #         dd["degree"] = d_["degree"]
+
+    #         dd["beta"] = d_["data"]["regression"]["beta_coefs"]
+
+    #         minvals.append(dd)
+
+    #     print("BEST ESTIMATE:")
+    #     opt_val = min(minvals, key=lambda d: d["score"])
+    #     print(opt_val)
+
+    #     if "franke" in analysis_name:
+    #         print ("franke")
+    #         ### Franke func
+    #         Nrows, Ncols = 100, 100
+    #         ax_rows = np.linspace(0,1,Nrows)
+    #         ax_cols = np.linspace(0,1,Ncols)
+    #     else:        
+    #         ### Terrain data
+    #         Nrows, Ncols = 100, 250
+    #         ax_rows = np.arange(Nrows)
+    #         ax_cols = np.arange(Ncols)
+
+    #     [x, y] = np.meshgrid(ax_cols, ax_rows)
+
+    #     poly = sk_preproc.PolynomialFeatures(degree=opt_val["degree"], include_bias=True)
+    #     X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]))
+    #     opt_beta = opt_val["beta"]
+    #     z = X @ opt_beta
+
+    #     if "alpha" in opt_val:
+    #         figure_name = "../fig/{}_{}_{}".format(
+    #             opt_val["reg_type"],opt_val["degree"],opt_val["alpha"])
+    #     else:
+    #         figure_name = "../fig/{}_{}".format(
+    #             opt_val["reg_type"],opt_val["degree"])
+
+    #     plot_simple_surface(x, y, z.reshape(Nrows,Ncols), figure_name)
+
+
+
+    # for deg_ in degree_values:
+    #     for dtype_ in data_type_values:
+    #         for regtype_ in regression_types:
+
+
+            
 
 
 def create_beta_table(data):
@@ -649,20 +794,22 @@ def heat_map(data_, reg_type, degree, data_type="regression",
     noise_values = sorted(list(set(noise_values)))
     plot_data = np.empty((len(alpha_values), len(noise_values)))
 
+
     for i, alpha in enumerate(alpha_values):
         for j, noise in enumerate(noise_values):
             for d in new_data:
+
                 if d["noise"] == noise and d["alpha"] == alpha:
                     try:
+                        plot_data[i, j] = d["data"][data_type][stat]
                         # print(d["data"]["regression"][stat])
-                        plot_data[i, j] = d["data"]["regression"][stat]
                     except KeyError:
-                        print(d["reg_type"],data_type, d.keys())
-                        return
+                        print(d["reg_type"], d["alpha"], d["noise"], d["degree"],data_type, d.keys(), d["data"].keys(), d["data"][data_type].keys())
+                        exit()
 
     heatmap_plotter(alpha_values, noise_values, plot_data,
-                    "../fig/{2:s}_{0:s}_{1:s}_deg{3:d}_heatmap.pdf".format(reg_type,
-                                                                  stat, aname, degree),
+                    "../fig/{2:s}_{0:s}_{1:s}_deg{3:d}_dtype{4:s}_heatmap.pdf".format(reg_type,
+                                                                  stat, aname, degree, data_type),
                     xlabel=r"$\lambda$",
                     ylabel=r"Noise$(\mathcal{N}(',\infty))$",
                     cbartitle=stat_latex)
@@ -697,14 +844,37 @@ def heatmap_plotter(x, y, z, figure_name, tick_param_fs=None, label_fs=None,
     print("Figure saved at {}".format(figure_name))
     plt.close(fig)
 
+def plot_simple_surface(x, y, z, filename="../../fig/simple_surface"):
+    """Surface plotter from project notes."""
+
+    fig = plt.figure()
+    ax = fig.gca(projection="3d")
+
+    # Plotting the surface
+    surf = ax.plot_surface(x, y, z, cmap=cm.viridis,
+                           linewidth=0, antialiased=False)
+
+    # Customize the z axis
+    ax.set_zlim(-01.0, 1.40)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter("%.02f"))
+    ax.set_xlabel(r"$x$")
+    ax.set_ylabel(r"$y$")
+    ax.set_zlabel(r"$z$")
+
+    # Add a color bar which maps values to colors.
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+
+    # print(os.getcwd())
+    figpath = os.path.abspath(filename + ".pdf")
+    # print(figpath)
+    # plt.savefig(figpath, dpi=350)
+    plt.show()
+
+
 
 def find_optimal_parameters(data):
     pass
-
-
-def main():
-    # analysis(load_pickle("franke_func_data.pickle"), "franke")
-    analysis(load_pickle("terrain_data1.pickle"), "terrain")
 
 
 if __name__ == '__main__':

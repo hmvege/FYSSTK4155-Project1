@@ -72,9 +72,7 @@ class ManualOLS(_dataStorer):
         """Manual implementation of the OLS."""
 
         poly = sk_preproc.PolynomialFeatures(degree=deg, include_bias=True)
-        X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
-                               cp.deepcopy(z.ravel()))
-
+        X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]), z.ravel())
         linreg = reg.OLSRegression()
         linreg.fit(X, cp.deepcopy(z.ravel()))
         z_predict_ = linreg.predict(X).ravel()
