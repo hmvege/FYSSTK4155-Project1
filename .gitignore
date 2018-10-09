@@ -21,3 +21,6 @@ __pycache__
 *.pyc
 *.bib
 *.pickle
+*.npy
+_various_scripts/visit_plot.py
+

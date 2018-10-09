@@ -252,7 +252,6 @@ class ManualRidge(_dataStorer):
         X = poly.fit_transform(cp.deepcopy(np.c_[x.ravel(), y.ravel()]),
                                cp.deepcopy(z.ravel()))
 
-        self.data["alpha"] = alpha
 
         linreg = reg.RidgeRegression(alpha)
         linreg.fit(X, cp.deepcopy(z.ravel()))
@@ -363,7 +362,6 @@ class SKLearnRidge(_dataStorer):
         beta_variance = metrics.ridge_regression_variance(
             X, z_variance, alpha)
 
-        self.data["alpha"] = alpha
         self.data["regression"] = {
             "y_pred": z_predict,
             "r2": R2,
@@ -440,7 +438,6 @@ class SKLearnLasso(_dataStorer):
         # Gets the beta coefs
         beta = ridge.coef_
 
-        self.data["alpha"] = alpha
         self.data["regression"] = {
             "y_pred": z_predict,
             "r2": R2,
