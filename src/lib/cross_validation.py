@@ -356,6 +356,9 @@ class MCCrossValidation(__CV_core):
         beta_coefs = []
         self.y_pred_list = np.empty((N_mc_crossvalidations, holdout_test_size))
 
+        # Sets up design matrices beforehand
+        X_mc_train = self._design_matrix(x_mc_train)
+
         for i_mc in tqdm(range(N_mc_crossvalidations),
                          desc="Monte Carlo Cross Validation"):
 
@@ -364,22 +367,23 @@ class MCCrossValidation(__CV_core):
             mccv_train_indices = np.array(
                 list(set(mc_indices) - set(mccv_test_indexes)))
 
-            # Gets the testing data
-            k_x_test = x_mc_train[mccv_test_indexes]
-            k_y_test = x_mc_train[mccv_test_indexes]
+            # # Gets the testing data
+            # k_x_test = x_mc_train[mccv_test_indexes]
+            # k_y_test = y_mc_train[mccv_test_indexes]
 
-            X_test = self._design_matrix(k_x_test)
+            # X_test = self._design_matrix(k_x_test)
 
             # # Sets up indexes
             # set_list = list(range(k_splits))
             # set_list.pop(ik)
 
             # Sets up new data set
-            k_x_train = x_mc_train[mccv_train_indices]
+            # k_x_train = x_mc_train[mccv_train_indices]
+            X_train = X_mc_train[mccv_train_indices]
             k_y_train = y_mc_train[mccv_train_indices]
 
             # Sets up function to predict
-            X_train = self._design_matrix(k_x_train)
+            # X_train = self._design_matrix(k_x_train)
 
             # Trains method bu fitting data
             self.reg.fit(X_train, k_y_train)

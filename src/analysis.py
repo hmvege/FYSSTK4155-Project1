@@ -80,6 +80,8 @@ def franke_analysis(*data):
 
     # create_beta_table(ols_data)
 
+    plot_beta_values(data, noise=0.0, deg=5, data_type="bootstrap", reg_type="ridge")
+
     # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
     # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
     # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso")
