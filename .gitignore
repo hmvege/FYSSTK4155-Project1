@@ -22,5 +22,7 @@ __pycache__
 *.bib
 *.pickle
 *.npy
+
 _various_scripts/visit_plot.py
+*visit_plot*
 

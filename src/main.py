@@ -147,10 +147,18 @@ def franke_func_tasks():
     test_percent = 0.4
     print_results = False
 
-    noise_sigma_values = np.linspace(0, 1.0, 8)
+    noise_sigma_values = np.linspace(0, 2.0, 10)
     noise_mu = 0
     polynom_degrees = [1, 2, 3, 4, 5, 6, 7, 8]
-    alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3]
+    # alpha_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3]
+
+    alpha_values = [1e-4, 0.5e-3, 1e-3, 0.5e-2, 1e-2, 0.5e-1,
+                    1e-1, 0.5, 1, 0.5e1, 1e1, 0.5e2, 1e2, 0.5e3, 1e3]
+
+    # print(alpha_values)
+    # print(np.logspace(-4, 4, 20))
+    # exit(1)
+
 
     np.random.seed(1234)
 
@@ -202,13 +210,13 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
     if "ols" in regression_methods:
         print("\nOrdinarty Linear Regression")
 
-        for degree in polynom_degrees:
-            print("\n**** Polynom degree: {} ****".format(degree))
+        for deg in polynom_degrees:
+            print("\n**** Polynom degree: {} ****".format(deg))
 
             for noise in noise_sigma_values:
                 z += np.random.normal(0, noise, size=z.shape)
                 if "manual" in regression_implementation:
-                    ols = reggen.ManualOLS(x, y, z, deg=degree,
+                    ols = reggen.ManualOLS(x, y, z, deg=deg,
                                            N_bs=N_bs_resampling,
                                            N_cv_bs=N_cv_bs,
                                            test_percent=test_percent,
@@ -216,7 +224,7 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
 
                     data.append({
                         "reg_type": "ols",
-                        "degree": degree,
+                        "degree": deg,
                         "noise": noise,
                         "method": "manual",
                         "data": cp.deepcopy(ols.data),
@@ -256,7 +264,7 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
 
                         data.append({
                             "reg_type": "ridge",
-                            "degree": degree,
+                            "degree": deg,
                             "noise": noise,
                             "alpha": alpha,
                             "method": "manual",
