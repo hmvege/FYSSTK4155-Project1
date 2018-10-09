@@ -23,7 +23,7 @@ import imageio
 def main():
     franke_func_tasks("franke_func_data_final12.pickle")
 
-    # real_data("terrain_data2.pickle")
+    real_data("terrain_data2.pickle")
 
 
 def surface_plot(surface, title):
