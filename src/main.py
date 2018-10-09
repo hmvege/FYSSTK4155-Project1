@@ -136,16 +136,16 @@ def franke_func_tasks():
     t1 = time.clock()
 
     # Generates data
-    N_data_points = 100  # 100
+    N_data_points = 10  # 100
     x = np.sort(np.random.uniform(0, 1, N_data_points))
     y = np.sort(np.random.uniform(0, 1, N_data_points))
 
     # Analysis constants
-    N_bs_resampling = 200  # 1000
-    N_cv_bs = 100 # 100
+    N_bs_resampling = 20  # 1000
+    N_cv_bs = 10 # 100
     k_splits = 4
     test_percent = 0.4
-    print_results = False
+    print_results = True
 
     noise_sigma_values = np.linspace(0, 2.0, 10)
     noise_mu = 0

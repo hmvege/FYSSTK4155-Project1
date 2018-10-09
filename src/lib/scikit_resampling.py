@@ -19,17 +19,18 @@ def sk_learn_k_fold_cv(x, y, z, kf_reg, design_matrix, k_splits=4,
     kf = sk_modsel.KFold(n_splits=k_splits)
 
     X_test = design_matrix(x_test)
+    X_train = design_matrix(x_train)
 
     y_pred_list = []
     beta_coefs = []
 
-    for train_index, test_index in tqdm(kf.split(x_train), 
+    for train_index, test_index in tqdm(kf.split(X_train), 
         desc="SciKit-Learn k-fold Cross Validation"):
 
-        kx_train, kx_test = x_train[train_index], x_train[test_index]
+        kX_train, kX_test = X_train[train_index], X_train[test_index]
         kY_train, kY_test = y_train[train_index], y_train[test_index]
 
-        kf_reg.fit(design_matrix(kx_train), kY_train)
+        kf_reg.fit(kX_train, kY_train)
         y_pred_list.append(kf_reg.predict(X_test))
 
         beta_coefs.append(kf_reg.coef_)
@@ -100,9 +101,12 @@ def sk_learn_bootstrap(x, y, z, design_matrix, kf_reg, N_bs=100,
 
     beta_coefs = []
 
+    X_train = design_matrix(x_train)
+
     for i_bs in tqdm(range(N_bs), desc="SciKit-Learn bootstrap"):
-        x_boot, y_boot = sk_utils.resample(x_train, y_train)
-        X_boot = design_matrix(x_boot)
+        x_boot, y_boot = sk_utils.resample(X_train, y_train)
+        # x_boot, y_boot = sk_utils.resample(x_train, y_train)
+        # X_boot = design_matrix(x_boot)
 
         kf_reg.fit(X_boot, y_boot)
         # y_pred[:, i_bs] = kf_reg.predict(cp.deepcopy(x_test)).ravel()
