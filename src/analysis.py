@@ -70,53 +70,60 @@ def franke_analysis(*data):
                                   stats_to_select="r2")
     alpha_values, _ = select_data(lasso_data, "alpha", data_type="bootstrap",
                                   stats_to_select="r2")
+    degree_values, _ = select_data(ridge_data, "degree",
+                                   data_type="regression",
+                                   stats_to_select="r2")
     noise_values = sorted(list(set(noise_values)))
     alpha_values = sorted(list(set(alpha_values)))
+    degree_values = sorted(list(set(degree_values)))
 
     # create_beta_table(ols_data)
 
-    # plot_beta_values(data, noise=0.0, deg=5, data_type="bootstrap", reg_type="ols")
     for alpha_ in alpha_values:
-        plot_beta_values(data, noise=0.0, deg=5, alpha=alpha_, data_type="bootstrap",
-                         noise_values=noise_values, alpha_values=alpha_values)
+        for noise_ in noise_values:
+            for deg_ in degree_values:
+                plot_beta_values(data, noise=noise_, deg=deg_,
+                                 alpha=alpha_, data_type="bootstrap",
+                                 noise_values=noise_values,
+                                 alpha_values=alpha_values)
 
-    # plot_beta_values(data, noise=0.0, deg=5, data_type="bootstrap", noise_values=noise_values, alpha_values=alpha_values)
+    for deg_ in degree_values:
+        plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
+        plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
+        plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso")
 
-    # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ols")
-    # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="ridge")
-    # plot_R2_noise(cp.deepcopy(data), deg=5, reg_type="lasso")
+    plot_argx_argy(cp.deepcopy(data), "noise", "r2",
+                   x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
+                   y_arg_latex=r"$R^2$", deg=5, reg_type="lasso")
 
-    # plot_argx_argy(cp.deepcopy(data), "noise", "r2",
-    #                x_arg_latex=r"Noise($\mathcal{N}(',\infty)$)",
-    #                y_arg_latex=r"$R^2$", deg=5, reg_type="lasso")
+    plot_bias_variance_all(cp.deepcopy(data), "mccv",
+                           data_type_header=r"MC-CV")
 
-    # plot_bias_variance_all(cp.deepcopy(data), "mccv",
-    #                        data_type_header=r"MC-CV")
+    plot_bias_variance(cp.deepcopy(data), "ols", "mccv",
+                       data_type_header=r"MC-CV")
+    plot_bias_variance(cp.deepcopy(data), "ridge", "kfoldcv",
+                       data_type_header=r"$k$-fold CV")
+    plot_bias_variance(cp.deepcopy(data), "lasso", "bootstrap",
+                       data_type_header=r"Bootstrap")
 
-    # plot_bias_variance(cp.deepcopy(data), "ols", "mccv",
-    #                    data_type_header=r"MC-CV")
-    # plot_bias_variance(cp.deepcopy(data), "ridge", "kfoldcv",
-    #                    data_type_header=r"$k$-fold CV")
-    # plot_bias_variance(cp.deepcopy(data), "lasso", "bootstrap",
-    #                    data_type_header=r"Bootstrap")
+    for deg_ in degree_values:
+        heat_map(cp.deepcopy(ridge_data), "ridge",
+                 deg_, stat="r2", stat_latex=r"$R^2$")
+        heat_map(cp.deepcopy(ridge_data), "ridge",
+                 deg_, stat="mse", stat_latex=r"MSE")
+        heat_map(cp.deepcopy(ridge_data), "ridge",
+                 deg_, stat="bias", stat_latex=r"Bias$^2$")
+        heat_map(cp.deepcopy(ridge_data), "ridge",
+                 deg_, stat="var", stat_latex=r"Var")
 
-    # heat_map(cp.deepcopy(ridge_data), "ridge",
-    #          5, stat="r2", stat_latex=r"$R^2$")
-    # heat_map(cp.deepcopy(ridge_data), "ridge",
-    #          5, stat="mse", stat_latex=r"MSE")
-    # heat_map(cp.deepcopy(ridge_data), "ridge",
-    #          5, stat="bias", stat_latex=r"Bias$^2$")
-    # heat_map(cp.deepcopy(ridge_data), "ridge",
-    #          5, stat="var", stat_latex=r"Var")
-
-    # heat_map(cp.deepcopy(lasso_data), "lasso",
-    #          5, stat="r2", stat_latex=r"$R^2$")
-    # heat_map(cp.deepcopy(lasso_data), "lasso",
-    #          5, stat="mse", stat_latex=r"MSE")
-    # heat_map(cp.deepcopy(lasso_data), "lasso",
-    #          5, stat="bias", stat_latex=r"Bias$^2$")
-    # heat_map(cp.deepcopy(lasso_data), "lasso",
-    #          5, stat="var", stat_latex=r"Var")
+        heat_map(cp.deepcopy(lasso_data), "lasso",
+                 deg_, stat="r2", stat_latex=r"$R^2$")
+        heat_map(cp.deepcopy(lasso_data), "lasso",
+                 deg_, stat="mse", stat_latex=r"MSE")
+        heat_map(cp.deepcopy(lasso_data), "lasso",
+                 deg_, stat="bias", stat_latex=r"Bias$^2$")
+        heat_map(cp.deepcopy(lasso_data), "lasso",
+                 deg_, stat="var", stat_latex=r"Var")
 
     find_optimal_parameters(data)
 
@@ -329,8 +336,9 @@ def plot_beta_values(data_, noise=0.0, alpha=0.1, deg=5, data_type="",
 
     fig.align_ylabels([ax1, ax2])
 
-    figure_name = ("../fig/beta_values_d{:d}_noise{:.4f}_alpha{:.4f}_{:s}.pdf".format(
-        deg, float(noise), float(alpha), data_type))
+    figure_name = (
+        "../fig/beta_values_d{:d}_noise{:.4f}_alpha{:.4f}_"
+        "{:s}.pdf".format(deg, float(noise), float(alpha), data_type))
     fig.savefig(figure_name)
     print("Figure saved at {}".format(figure_name))
     plt.close(fig)
@@ -633,8 +641,8 @@ def heatmap_plotter(x, y, z, figure_name, tick_param_fs=None, label_fs=None,
     plt.close(fig)
 
 
-def find_optimal_parameters(data)
-
+def find_optimal_parameters(data):
+    pass
 
 
 def main():
