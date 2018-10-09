@@ -268,21 +268,21 @@ def run_regrssion_methods(regression_methods, polynom_degrees,
                            "Degree: {2:d} ****\n").format(
                         alpha, float(noise), deg))
 
-                    if "manual" in regression_implementation:
-                        print("\n** MANUAL **")
-                        ridge = \
-                            reggen.ManualRidge(x, y, z, alpha, deg=deg,
-                                               test_percent=test_percent,
-                                               print_results=print_results)
+                    # if "manual" in regression_implementation:
+                    #     print("\n** MANUAL **")
+                    #     ridge = \
+                    #         reggen.ManualRidge(x, y, z, alpha, deg=deg,
+                    #                            test_percent=test_percent,
+                    #                            print_results=print_results)
 
-                        data.append({
-                            "reg_type": "ridge",
-                            "degree": deg,
-                            "noise": noise,
-                            "alpha": alpha,
-                            "method": "manual",
-                            "data": cp.deepcopy(ridge.data),
-                        })
+                    #     data.append({
+                    #         "reg_type": "ridge",
+                    #         "degree": deg,
+                    #         "noise": noise,
+                    #         "alpha": alpha,
+                    #         "method": "manual",
+                    #         "data": cp.deepcopy(ridge.data),
+                    #     })
 
                     if "sklearn" in regression_implementation:
                         print("\n** SKLEARN **")
