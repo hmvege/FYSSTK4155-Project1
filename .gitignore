@@ -16,12 +16,18 @@ build*
 # Latexrun
 latex.out
 latexrun
+
+# Random junk
 *pro.user
 __pycache__
 *.pyc
 *.bib
 *.pickle
 *.npy
+
+# Don't need to upload pictures...
+*.png
+fig/*
 
 _various_scripts/visit_plot.py
 *visit_plot*
